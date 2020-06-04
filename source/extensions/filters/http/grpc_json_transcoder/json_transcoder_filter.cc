@@ -720,7 +720,8 @@ bool JsonTranscoderFilter::maybeConvertGrpcStatus(Grpc::Status::GrpcStatus grpc_
     return false;
   }
 
-  auto status_details = Grpc::Common::getGrpcStatusDetailsBin(trailers);
+  auto status_details =
+      Grpc::Common::getGrpcStatusDetailsBin(dynamic_cast<Http::HeaderMap&>(trailers));
   if (!status_details) {
     // If no rpc.Status object was sent in the grpc-status-details-bin header,
     // construct it from the grpc-status and grpc-message headers.
