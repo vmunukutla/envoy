@@ -15,9 +15,6 @@ envoy_cc_library(
     name = "gcp_events_convert_filter_lib",
     srcs = ["gcp_events_convert_filter.cc",],
     hdrs = ["gcp_events_convert_filter.h",],
-    # external_deps = [
-    #     "pubsub_protos",
-    # ],
     deps = [
         "//include/envoy/http:filter_interface",
         "//include/envoy/runtime:runtime_interface",
@@ -32,6 +29,7 @@ envoy_cc_library(
         "//source/extensions/filters/http:well_known_names",
         "//source/extensions/filters/http/common:pass_through_filter_lib",
         "@envoy_api//envoy/extensions/filters/http/gcp_events_convert/v3:pkg_cc_proto",
+        "@com_google_googleapis//google/pubsub/v1:pubsub_cc_proto"
     ],
 )
 

@@ -1,6 +1,6 @@
-#include <string>
-
 #include "extensions/filters/http/gcp_events_convert/gcp_events_convert_filter.h"
+
+#include <string>
 
 #include "envoy/extensions/filters/http/gcp_events_convert/v3/gcp_events_convert.pb.h"
 #include "envoy/server/filter_config.h"
@@ -13,7 +13,10 @@
 #include "common/http/utility.h"
 #include "common/protobuf/utility.h"
 
-// #include "google/pubsub/v1/pubsub_proto.pb.h"
+#include "google/pubsub/v1/pubsub.pb.h"
+
+using google::pubsub::v1::PubsubMessage;
+using google::pubsub::v1::ReceivedMessage;
 
 namespace Envoy {
 namespace Extensions {
@@ -25,7 +28,7 @@ GcpEventsConvertFilterConfig::GcpEventsConvertFilterConfig(
     : key_(proto_config.key()), val_(proto_config.val()) {}
 
 GcpEventsConvertFilter::GcpEventsConvertFilter(GcpEventsConvertFilterConfigSharedPtr config)
-    : valid_cloud_event_(false), config_(config) {}
+    : skip_(false), config_(config) {}
 
 GcpEventsConvertFilter::~GcpEventsConvertFilter() {}
 
@@ -43,6 +46,7 @@ Http::FilterHeadersStatus GcpEventsConvertFilter::decodeHeaders(Http::RequestHea
   if (end_stream || !isCloudEvent(headers)) {
     // if this is a header-only request or it's not a request containing cloud event
     // we don't need to do any buffering
+    skip_ = true;
     return Http::FilterHeadersStatus::Continue;
   }
 
@@ -52,20 +56,38 @@ Http::FilterHeadersStatus GcpEventsConvertFilter::decodeHeaders(Http::RequestHea
 }
 
 Http::FilterDataStatus GcpEventsConvertFilter::decodeData(Buffer::Instance&, bool end_stream) {
+  std::cout << "decode data" << std::endl;
   // for any requst body that is not related to cloud event. Pass through
-  if (!valid_cloud_event_) return Http::FilterDataStatus::Continue;
+  if (skip_) return Http::FilterDataStatus::Continue;
 
   // wait for all the body has arrived.
   if (end_stream) {
     const Buffer::Instance* buffered = decoder_callbacks_->decodingBuffer();
-    // nothing got buffered, Continue
-    if (buffered == nullptr) return Http::FilterDataStatus::Continue;
+    
+    if (buffered == nullptr) {
+      // nothing got buffered, Continue
+      return Http::FilterDataStatus::Continue;
+    }
 
-    std::unique_ptr<Buffer::Instance> new_buffer = std::make_unique<Buffer::OwnedImpl>();
-    buffered->copyOut(0 , buffered->length() , new_buffer.get());
-    // ...
-    // TODO
-    // ...
+    ReceivedMessage received_message;
+    Envoy::ProtobufUtil::JsonParseOptions parse_option;
+    auto status = Envoy::ProtobufUtil::JsonStringToMessage(buffered->toString(), &received_message, parse_option);
+    
+    if (status != google::protobuf::util::Status::OK) {
+      // buffered data didn't successfully converted to proto. Continue
+      return Http::FilterDataStatus::Continue;
+    }
+
+    PubsubMessage& pubsub_message = *received_message.mutable_message();
+
+    // TODO 
+    // Use Cloud Event SDK to convert Pubsub Message to HTTP Binding
+    
+    if (!updateHeader() || !updateBody()){
+      // something wrong while update HTTP request. Continue
+      return Http::FilterDataStatus::Continue;
+    }
+
     return Http::FilterDataStatus::Continue;
   }
 
@@ -95,11 +117,24 @@ void GcpEventsConvertFilter::buildBody(const Buffer::Instance* buffered,
   }
 }
 
-// use the content type string value to determine whether the filter should be triggered or not. 
 bool GcpEventsConvertFilter::isCloudEvent(Http::RequestHeaderMap& headers) {
   absl::string_view  content_type = headers.getContentTypeValue();
-  valid_cloud_event_ = content_type.compare("application/grcp+json+cloudevent") == 0;
-  return valid_cloud_event_;
+  return content_type.compare("application/grcp+json+cloudevent") == 0;
+}
+
+bool GcpEventsConvertFilter::updateHeader() {
+  request_headers_->addCopy(headerKey(), headerValue());
+  return true;
+}
+
+bool GcpEventsConvertFilter::updateBody() {
+    decoder_callbacks_->modifyDecodingBuffer([](Buffer::Instance& buffered) {
+      Buffer::OwnedImpl new_buffer;
+      new_buffer.add("This is a example body");
+      buffered.drain(buffered.length());
+      buffered.move(new_buffer);
+    });
+    return true;
 }
 
 

@@ -40,18 +40,25 @@ public:
   void setDecoderFilterCallbacks(Http::StreamDecoderFilterCallbacks&) override;
 
 private:
-
-  void buildBody(const Buffer::Instance*, const Buffer::Instance& , std::string&);
-  bool isCloudEvent(Http::RequestHeaderMap&);
   
-  Http::RequestHeaderMap* request_headers_{};
-  bool valid_cloud_event_{}; 
-
-  const GcpEventsConvertFilterConfigSharedPtr config_;
-  Http::StreamDecoderFilterCallbacks* decoder_callbacks_;
-
+  void buildBody(const Buffer::Instance*, const Buffer::Instance& , std::string&);
   const Http::LowerCaseString headerKey() const;
   const std::string headerValue() const;
+  bool isCloudEvent(Http::RequestHeaderMap&);
+  // modify the data of HTTP request
+  // 1. drain buffered data
+  // 2. write cloud event data
+  bool updateBody();
+  // modify the header of HTTP request
+  // 1. replace header's content type with ce-datacontenttype
+  // 2. add cloud event information, ce-version, ce-type...... (except ce's data)
+  // 3. [TBD] add Ack ID into header 
+  bool updateHeader();
+  
+  Http::RequestHeaderMap* request_headers_{};
+  bool skip_{};
+  const GcpEventsConvertFilterConfigSharedPtr config_;
+  Http::StreamDecoderFilterCallbacks* decoder_callbacks_;
 };
 
 } // namespace GcpEventsConvert
