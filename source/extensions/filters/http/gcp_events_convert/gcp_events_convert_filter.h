@@ -42,7 +42,21 @@ public:
 private:
   const Http::LowerCaseString headerKey() const;
   const std::string headerValue() const;
+  static bool isCloudEvent(const Http::RequestHeaderMap&);
+
+  // modify the data of HTTP request
+  // 1. drain buffered data
+  // 2. write cloud event data
+  absl::Status updateBody();
+
+  // modify the header of HTTP request
+  // 1. replace header's content type with ce-datacontenttype
+  // 2. add cloud event information, ce-version, ce-type...... (except ce's data)
+  // 3. [TBD] add Ack ID into header 
+  absl::Status updateHeader();
   
+  Http::RequestHeaderMap* request_headers_ = nullptr;
+  bool has_cloud_event_ = false;
   const GcpEventsConvertFilterConfigSharedPtr config_;
   Http::StreamDecoderFilterCallbacks* decoder_callbacks_ = nullptr;
 };
