@@ -48,8 +48,8 @@ public:
   const std::string Router = "envoy.filters.http.router";
   // Health checking filter
   const std::string HealthCheck = "envoy.filters.http.health_check";
-  // Gcp Events convert HTTP filter
-  const std::string GcpEventsConvert = "envoy.filters.http.gcp_event_convert";
+  // Gcp Events converter filter
+  const std::string GcpEventsConvert = "envoy.filters.http.gcp_events_convert";
   // Lua filter
   const std::string Lua = "envoy.filters.http.lua";
   // On-demand RDS updates filter

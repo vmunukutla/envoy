@@ -12,16 +12,16 @@ namespace HttpFilters {
 namespace GcpEventsConvert {
 
 /**
- * Config registration for the router filter. @see NamedHttpFilterConfigFactory.
+ * Config registration for the Gcp Events Convert filter. @see NamedHttpFilterConfigFactory.
  */
 class GcpEventsConvertFilterFactory
-    : public Common::FactoryBase<envoy::extensions::filters::http::gcp_events_convert::v3::Decoder> {
+    : public Common::FactoryBase<envoy::extensions::filters::http::gcp_events_convert::v3::GcpEventsConvert> {
 public:
   GcpEventsConvertFilterFactory() : FactoryBase(HttpFilterNames::get().GcpEventsConvert) {}
 
 private:
   Http::FilterFactoryCb createFilterFactoryFromProtoTyped(
-      const envoy::extensions::filters::http::gcp_events_convert::v3::Decoder& proto_config,
+      const envoy::extensions::filters::http::gcp_events_convert::v3::GcpEventsConvert& proto_config,
       const std::string& stats_prefix, Server::Configuration::FactoryContext& context) override;
 };
 
