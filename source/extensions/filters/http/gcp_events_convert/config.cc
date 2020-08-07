@@ -14,11 +14,10 @@ namespace HttpFilters {
 namespace GcpEventsConvert {
 
 Http::FilterFactoryCb GcpEventsConvertFilterFactory::createFilterFactoryFromProtoTyped(
-    const envoy::extensions::filters::http::gcp_events_convert::v3::Decoder& proto_config,
+    const envoy::extensions::filters::http::gcp_events_convert::v3::GcpEventsConvert& proto_config,
     const std::string&, Server::Configuration::FactoryContext&) {
-
-  GcpEventsConvertFilterConfigSharedPtr config(
-      new GcpEventsConvertFilterConfig(proto_config));
+  GcpEventsConvertFilterConfigSharedPtr config = 
+              std::make_shared<GcpEventsConvertFilterConfig>(proto_config);
 
   return [config](Http::FilterChainFactoryCallbacks& callbacks) -> void {
     callbacks.addStreamDecoderFilter(std::make_shared<GcpEventsConvertFilter>(config));
@@ -26,7 +25,7 @@ Http::FilterFactoryCb GcpEventsConvertFilterFactory::createFilterFactoryFromProt
 }
 
 /**
- * Static registration for the sample decoder filter. @see RegisterFactory.
+ * Static registration for the Gcp Events Convert filter. @see RegisterFactory.
  */
 REGISTER_FACTORY(GcpEventsConvertFilterFactory,
                  Server::Configuration::NamedHttpFilterConfigFactory){"envoy.gcp_events_convert"};
