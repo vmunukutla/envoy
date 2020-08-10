@@ -13,6 +13,10 @@ envoy_cc_library(
     name = "grpc_stream_demuxer",
     srcs = ["demuxer.cc"],
     hdrs = ["demuxer.h"],
+    deps = [
+        "@com_google_googleapis//google/pubsub/v1:pubsub_cc_grpc",
+        "@com_github_grpc_grpc//:grpc++",
+    ],
 )
 
 envoy_cc_library(
