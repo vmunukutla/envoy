@@ -1,4 +1,3 @@
-#include <chrono>
 #include <memory>
 
 #include "envoy/event/dispatcher.h"
@@ -18,14 +17,14 @@
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 
-using testing::InSequence;
-using testing::NiceMock;
-using testing::Return;
-
 namespace Envoy {
 namespace Extensions {
 namespace HttpFilters {
 namespace GcpEventsConvert {
+
+using testing::InSequence;
+using testing::NiceMock;
+using testing::Return;
 
 class GcpEventsConvertFilterTest : public testing::Test {
 public:
@@ -40,35 +39,18 @@ public:
     filter_.setDecoderFilterCallbacks(callbacks_);
   }
 
-  void routeLocalConfig(const Router::RouteSpecificFilterConfig* route_settings,
-                        const Router::RouteSpecificFilterConfig* vhost_settings) {
-    ON_CALL(callbacks_.route_->route_entry_, perFilterConfig(HttpFilterNames::get().GcpEventsConvert))
-        .WillByDefault(Return(route_settings));
-    ON_CALL(callbacks_.route_->route_entry_.virtual_host_,
-            perFilterConfig(HttpFilterNames::get().GcpEventsConvert))
-        .WillByDefault(Return(vhost_settings));
-  }
-
   NiceMock<Http::MockStreamDecoderFilterCallbacks> callbacks_;
   GcpEventsConvertFilterConfigSharedPtr config_;
   GcpEventsConvertFilter filter_;
-  // Create a runtime loader, so that tests can manually manipulate runtime guarded features.
-  TestScopedRuntime scoped_runtime;
 };
 
 TEST_F(GcpEventsConvertFilterTest, HeaderOnlyRequest) {
-  Http::TestRequestHeaderMapImpl headers{
-    {":method", "GET"}, {":path", "/"}, {":authority", "host"}};
+  Http::TestRequestHeaderMapImpl headers;
   EXPECT_EQ(Http::FilterHeadersStatus::Continue, filter_.decodeHeaders(headers, true));
 
   const Http::HeaderEntry* entry = headers.get(Http::LowerCaseString("some random key"));
-  EXPECT_TRUE(entry != nullptr);
+  ASSERT_THAT(entry, testing::NotNull());
   EXPECT_EQ(entry->value() , "some random value");
-}
-
-TEST_F(GcpEventsConvertFilterTest, TestMetadata) {
-  Http::MetadataMap metadata_map{{"metadata", "metadata"}};
-  EXPECT_EQ(Http::FilterMetadataStatus::Continue, filter_.decodeMetadata(metadata_map));
 }
 
 TEST_F(GcpEventsConvertFilterTest, RequestWithDataAndTrailer) {
