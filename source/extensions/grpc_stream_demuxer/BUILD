@@ -23,6 +23,6 @@ envoy_cc_extension(
         ":grpc_stream_demuxer",
         "//include/envoy/config:typed_config_interface",
     ],
-    security_posture = "requires_trusted_downstream_and_upstream",
+    security_posture = "unknown",
     status = "wip",
 )
