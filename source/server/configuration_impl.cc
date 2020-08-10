@@ -21,6 +21,7 @@
 #include "common/config/utility.h"
 #include "common/network/socket_option_factory.h"
 #include "common/protobuf/utility.h"
+#include "extensions/grpc_stream_demuxer/config.h"
 
 namespace Envoy {
 namespace Server {
@@ -82,6 +83,8 @@ void MainImpl::initialize(const envoy::config::bootstrap::v3::Bootstrap& bootstr
     server.listenerManager().addOrUpdateListener(listeners[i], "", false);
   }
 
+  initializeGRPCStreamDemuxers();
+
   stats_flush_interval_ =
       std::chrono::milliseconds(PROTOBUF_GET_MS_OR_DEFAULT(bootstrap, stats_flush_interval, 5000));
 
@@ -136,6 +139,16 @@ void MainImpl::initializeStatsSinks(const envoy::config::bootstrap::v3::Bootstra
 
     stats_sinks_.emplace_back(factory.createStatsSink(*message, server));
   }
+}
+
+void MainImpl::initializeGRPCStreamDemuxers() {
+  ENVOY_LOG(info, "loading gRPC stream demuxer configurations");
+
+  auto& factory = Config::Utility::getAndCheckFactoryByName<Demuxer::GRPCStreamDemuxerFactory>("grpc_stream_demuxer");
+  Demuxer::GRPCStreamDemuxerPtr demuxer = factory.createGPRCStreamDemuxer();
+  // TODO (vmunukutla): It might be too early to start the demuxer here. Check if demuxer should
+  // be started later.
+  demuxer->start();
 }
 
 InitialImpl::InitialImpl(const envoy::config::bootstrap::v3::Bootstrap& bootstrap) {
