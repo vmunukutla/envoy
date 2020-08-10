@@ -15,6 +15,8 @@ envoy_cc_library(
     hdrs = ["grpc_stream_demuxer.h"],
     deps = [
         "//source/common/common:minimal_logger_lib",
+        "@com_google_googleapis//google/pubsub/v1:pubsub_cc_grpc",
+        "@com_github_grpc_grpc//:grpc++",
     ],
 )
 
