@@ -70,6 +70,7 @@ TEST(GcpEventsConvertFilterUnitTest, DecodeDataTestWithOneBody) {
   config.set_key("some random key");
   config.set_val("some random value");
   GcpEventsConvertFilter filter(std::make_shared<GcpEventsConvertFilterConfig>(config));
+<<<<<<< HEAD
 
   Buffer::OwnedImpl data1("hello");
   EXPECT_EQ(Http::FilterDataStatus::Continue, filter.decodeData(data1, false));
@@ -86,6 +87,24 @@ TEST(GcpEventsConvertFilterUnitTest, DecodeDataTestWithMultipleBody) {
 
   Buffer::OwnedImpl data1("hello");
   EXPECT_EQ(Http::FilterDataStatus::Continue, filter.decodeData(data1, false));
+=======
+
+  Buffer::OwnedImpl data1("hello");
+  EXPECT_EQ(Http::FilterDataStatus::Continue, filter.decodeData(data1, false));
+
+  Buffer::OwnedImpl data2;
+  EXPECT_EQ(Http::FilterDataStatus::Continue, filter.decodeData(data1, true));
+}
+
+TEST(GcpEventsConvertFilterUnitTest, DecodeDataTestWithMultipleBody) {
+  envoy::extensions::filters::http::gcp_events_convert::v3::GcpEventsConvert config;
+  config.set_key("some random key");
+  config.set_val("some random value");
+  GcpEventsConvertFilter filter(std::make_shared<GcpEventsConvertFilterConfig>(config));
+
+  Buffer::OwnedImpl data1("hello");
+  EXPECT_EQ(Http::FilterDataStatus::Continue, filter.decodeData(data1, false));
+>>>>>>> 722cc764017ba0e554e1dc2edf1005084da2fa9b
 
   Buffer::OwnedImpl data2(" world");
   EXPECT_EQ(Http::FilterDataStatus::Continue, filter.decodeData(data2, false));
