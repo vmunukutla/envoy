@@ -23,6 +23,9 @@ namespace Extensions {
 namespace HttpFilters {
 namespace GcpEventsConvert {
 
+using google::pubsub::v1::PubsubMessage;
+using google::pubsub::v1::ReceivedMessage;
+
 GcpEventsConvertFilterConfig::GcpEventsConvertFilterConfig(
     const envoy::extensions::filters::http::gcp_events_convert::v3::GcpEventsConvert& proto_config)
     : key_(proto_config.key()), val_(proto_config.val()) {}
@@ -138,7 +141,7 @@ absl::Status GcpEventsConvertFilter::updateBody() {
       new_buffer.add("This is a example body");
       // drain the current buffered instance
       buffered.drain(buffered.length());
-      // replace the current buffered instance with buffer instance just created
+      // replace the current buffered instance with the new buffer instance
       buffered.move(new_buffer);
     });
     return absl::OkStatus();
