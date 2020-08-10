@@ -26,47 +26,95 @@ using testing::InSequence;
 using testing::NiceMock;
 using testing::Return;
 
-class GcpEventsConvertFilterTest : public testing::Test {
-public:
-  GcpEventsConvertFilterConfigSharedPtr setupConfig() {
-    envoy::extensions::filters::http::gcp_events_convert::v3::GcpEventsConvert proto_config;
-    proto_config.set_key("some random key");
-    proto_config.set_val("some random value");
-    return std::make_shared<GcpEventsConvertFilterConfig>(proto_config);
-  }
-
-  GcpEventsConvertFilterTest() : config_(setupConfig()), filter_(config_) {
-    filter_.setDecoderFilterCallbacks(callbacks_);
-  }
-
-  NiceMock<Http::MockStreamDecoderFilterCallbacks> callbacks_;
-  GcpEventsConvertFilterConfigSharedPtr config_;
-  GcpEventsConvertFilter filter_;
-};
-
-TEST_F(GcpEventsConvertFilterTest, HeaderOnlyRequest) {
+TEST(GcpEventsConvertFilterUnitTest, DecodeHeaderTestWtihLowerCases) {
+  envoy::extensions::filters::http::gcp_events_convert::v3::GcpEventsConvert config;
+  config.set_key("some random key");
+  config.set_val("some random value");
+  GcpEventsConvertFilter filter(std::make_shared<GcpEventsConvertFilterConfig>(config));
   Http::TestRequestHeaderMapImpl headers;
-  EXPECT_EQ(Http::FilterHeadersStatus::Continue, filter_.decodeHeaders(headers, true));
 
+  EXPECT_EQ(Http::FilterHeadersStatus::Continue, filter.decodeHeaders(headers, true));
   const Http::HeaderEntry* entry = headers.get(Http::LowerCaseString("some random key"));
   ASSERT_THAT(entry, testing::NotNull());
   EXPECT_EQ(entry->value() , "some random value");
 }
 
-TEST_F(GcpEventsConvertFilterTest, RequestWithDataAndTrailer) {
-  InSequence s;
-
+TEST(GcpEventsConvertFilterUnitTest, DecodeHeaderTestWithUpperCaseKey) {
+  envoy::extensions::filters::http::gcp_events_convert::v3::GcpEventsConvert config;
+  config.set_key("SOME RANDOM KEY");
+  config.set_val("some random value");
+  GcpEventsConvertFilter filter(std::make_shared<GcpEventsConvertFilterConfig>(config));
   Http::TestRequestHeaderMapImpl headers;
-  EXPECT_EQ(Http::FilterHeadersStatus::Continue, filter_.decodeHeaders(headers, false));
+
+  EXPECT_EQ(Http::FilterHeadersStatus::Continue, filter.decodeHeaders(headers, true));
+  const Http::HeaderEntry* entry = headers.get(Http::LowerCaseString("some random key"));
+  ASSERT_THAT(entry, testing::NotNull());
+  EXPECT_EQ(entry->value() , "some random value");
+}
+
+TEST(GcpEventsConvertFilterUnitTest, DecodeHeaderTestWithMixedCaseValue) {
+  envoy::extensions::filters::http::gcp_events_convert::v3::GcpEventsConvert config;
+  config.set_key("some random key");
+  config.set_val("some random MIX value");
+  GcpEventsConvertFilter filter(std::make_shared<GcpEventsConvertFilterConfig>(config));
+  Http::TestRequestHeaderMapImpl headers;
+
+  EXPECT_EQ(Http::FilterHeadersStatus::Continue, filter.decodeHeaders(headers, true));
+  const Http::HeaderEntry* entry = headers.get(Http::LowerCaseString("some random key"));
+  ASSERT_THAT(entry, testing::NotNull());
+  EXPECT_EQ(entry->value() , "some random MIX value");
+}
+
+TEST(GcpEventsConvertFilterUnitTest, DecodeDataTestWithOneBody) {
+  envoy::extensions::filters::http::gcp_events_convert::v3::GcpEventsConvert config;
+  config.set_key("some random key");
+  config.set_val("some random value");
+  GcpEventsConvertFilter filter(std::make_shared<GcpEventsConvertFilterConfig>(config));
 
   Buffer::OwnedImpl data1("hello");
-  EXPECT_EQ(Http::FilterDataStatus::Continue, filter_.decodeData(data1, false));
+  EXPECT_EQ(Http::FilterDataStatus::Continue, filter.decodeData(data1, false));
+
+  Buffer::OwnedImpl data2;
+  EXPECT_EQ(Http::FilterDataStatus::Continue, filter.decodeData(data1, true));
+}
+
+TEST(GcpEventsConvertFilterUnitTest, DecodeDataTestWithMultipleBody) {
+  envoy::extensions::filters::http::gcp_events_convert::v3::GcpEventsConvert config;
+  config.set_key("some random key");
+  config.set_val("some random value");
+  GcpEventsConvertFilter filter(std::make_shared<GcpEventsConvertFilterConfig>(config));
+
+  Buffer::OwnedImpl data1("hello");
+  EXPECT_EQ(Http::FilterDataStatus::Continue, filter.decodeData(data1, false));
 
   Buffer::OwnedImpl data2(" world");
-  EXPECT_EQ(Http::FilterDataStatus::Continue, filter_.decodeData(data2, true));
+  EXPECT_EQ(Http::FilterDataStatus::Continue, filter.decodeData(data2, false));
 
-  Http::TestRequestTrailerMapImpl trailers;
-  EXPECT_EQ(Http::FilterTrailersStatus::Continue, filter_.decodeTrailers(trailers));
+  Buffer::OwnedImpl data3("! ");
+  EXPECT_EQ(Http::FilterDataStatus::Continue, filter.decodeData(data3, false));
+
+  Buffer::OwnedImpl data4;
+  EXPECT_EQ(Http::FilterDataStatus::Continue, filter.decodeData(data4, true));
+}
+
+TEST(GcpEventsConvertFilterUnitTest, DecodeDataTestWithoutBody) {
+  envoy::extensions::filters::http::gcp_events_convert::v3::GcpEventsConvert config;
+  config.set_key("some random key");
+  config.set_val("some random value");
+  GcpEventsConvertFilter filter(std::make_shared<GcpEventsConvertFilterConfig>(config));
+
+  Buffer::OwnedImpl data;
+  EXPECT_EQ(Http::FilterDataStatus::Continue, filter.decodeData(data, true));
+}
+
+TEST(GcpEventsConvertFilterUnitTest, DecodeTrailerTest) {
+  envoy::extensions::filters::http::gcp_events_convert::v3::GcpEventsConvert config;
+  config.set_key("some random key");
+  config.set_val("some random value");
+  GcpEventsConvertFilter filter(std::make_shared<GcpEventsConvertFilterConfig>(config));
+
+  Http::TestRequestTrailerMapImpl trailer;
+  EXPECT_EQ(Http::FilterTrailersStatus::Continue, filter.decodeTrailers(trailer));
 }
 
 } // namespace GcpEventsConvert
