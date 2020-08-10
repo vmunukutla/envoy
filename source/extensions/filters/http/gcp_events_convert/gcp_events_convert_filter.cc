@@ -18,9 +18,6 @@
 
 #include "google/pubsub/v1/pubsub.pb.h"
 
-using google::pubsub::v1::PubsubMessage;
-using google::pubsub::v1::ReceivedMessage;
-
 namespace Envoy {
 namespace Extensions {
 namespace HttpFilters {
@@ -51,7 +48,6 @@ Http::FilterHeadersStatus GcpEventsConvertFilter::decodeHeaders(Http::RequestHea
 
 Http::FilterDataStatus GcpEventsConvertFilter::decodeData(Buffer::Instance&, bool) {
   // TODO(h9jiang): Implement the logic of decodeData
-  
   return Http::FilterDataStatus::Continue;
 }
 

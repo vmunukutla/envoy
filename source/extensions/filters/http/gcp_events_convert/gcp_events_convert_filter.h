@@ -25,9 +25,9 @@ using GcpEventsConvertFilterConfigSharedPtr = std::shared_ptr<GcpEventsConvertFi
 /**
  * The filter instance for convert Cloud Event Pubsub Binding to HTTP binding
  */
-class GcpEventsConvertFilter : public Http::StreamDecoderFilter , public Logger::Loggable<Logger::Id::filter>{
+class GcpEventsConvertFilter : public Http::StreamDecoderFilter, public Logger::Loggable<Logger::Id::filter> {
 public:
-  GcpEventsConvertFilter(GcpEventsConvertFilterConfigSharedPtr);
+  GcpEventsConvertFilter(GcpEventsConvertFilterConfigSharedPtr config);
 
   // Http::StreamFilterBase
   void onDestroy() override;
