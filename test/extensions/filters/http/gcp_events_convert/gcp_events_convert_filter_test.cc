@@ -17,16 +17,12 @@
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 
-using testing::InSequence;
-using testing::NiceMock;
-using testing::Return;
-
 namespace Envoy {
 namespace Extensions {
 namespace HttpFilters {
 namespace GcpEventsConvert {
 
-TEST(GcpEventsConvertFilterUnitTest, DecodeHeaderTestWtihLowerCases) {
+TEST(GcpEventsConvertFilterUnitTest, DecodeHeaderTestWithLowerCases) {
   envoy::extensions::filters::http::gcp_events_convert::v3::GcpEventsConvert config;
   config.set_key("some random key");
   config.set_val("some random value");
@@ -50,19 +46,6 @@ TEST(GcpEventsConvertFilterUnitTest, DecodeHeaderTestWithUpperCaseKey) {
   const Http::HeaderEntry* entry = headers.get(Http::LowerCaseString("some random key"));
   ASSERT_THAT(entry, testing::NotNull());
   EXPECT_EQ(entry->value() , "some random value");
-}
-
-TEST(GcpEventsConvertFilterUnitTest, DecodeHeaderTestWithMixedCaseValue) {
-  envoy::extensions::filters::http::gcp_events_convert::v3::GcpEventsConvert config;
-  config.set_key("some random key");
-  config.set_val("some random MIX value");
-  GcpEventsConvertFilter filter(std::make_shared<GcpEventsConvertFilterConfig>(config));
-  Http::TestRequestHeaderMapImpl headers;
-
-  EXPECT_EQ(Http::FilterHeadersStatus::Continue, filter.decodeHeaders(headers, true));
-  const Http::HeaderEntry* entry = headers.get(Http::LowerCaseString("some random key"));
-  ASSERT_THAT(entry, testing::NotNull());
-  EXPECT_EQ(entry->value() , "some random MIX value");
 }
 
 TEST(GcpEventsConvertFilterUnitTest, DecodeDataTestWithOneBody) {

@@ -44,7 +44,7 @@ private:
   const std::string headerValue() const;
   
   const GcpEventsConvertFilterConfigSharedPtr config_;
-  Http::StreamDecoderFilterCallbacks* decoder_callbacks_;
+  Http::StreamDecoderFilterCallbacks* decoder_callbacks_ = nullptr;
 };
 
 } // namespace GcpEventsConvert
