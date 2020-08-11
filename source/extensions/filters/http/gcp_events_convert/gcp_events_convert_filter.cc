@@ -28,19 +28,15 @@ using google::pubsub::v1::ReceivedMessage;
 
 GcpEventsConvertFilterConfig::GcpEventsConvertFilterConfig(
     const envoy::extensions::filters::http::gcp_events_convert::v3::GcpEventsConvert& proto_config)
-    : key_(proto_config.key()), val_(proto_config.val()) {}
+    : content_type_(proto_config.content_type()) {}
 
 GcpEventsConvertFilter::GcpEventsConvertFilter(GcpEventsConvertFilterConfigSharedPtr config)
     : has_cloud_event_(false), config_(config) {}
 
 void GcpEventsConvertFilter::onDestroy() {}
 
-const Http::LowerCaseString GcpEventsConvertFilter::headerKey() const {
-  return Http::LowerCaseString(config_->key_);
-}
-
-const std::string GcpEventsConvertFilter::headerValue() const {
-  return config_->val_;
+const std::string GcpEventsConvertFilter::matchContentType() const {
+  return config_->content_type_;
 }
 
 Http::FilterHeadersStatus GcpEventsConvertFilter::decodeHeaders(Http::RequestHeaderMap& headers, bool end_stream) {
@@ -59,15 +55,20 @@ Http::FilterHeadersStatus GcpEventsConvertFilter::decodeHeaders(Http::RequestHea
 Http::FilterDataStatus GcpEventsConvertFilter::decodeData(Buffer::Instance&, bool end_stream) {
   // for any requst body that is not related to cloud event. Pass through
   if (!has_cloud_event_) return Http::FilterDataStatus::Continue;
-
+  std::cout << "1" << std::endl;
   // wait for all the body has arrived.
   if (end_stream) {
+    std::cout << "2" << std::endl;
     const Buffer::Instance* buffered = decoder_callbacks_->decodingBuffer();
     
+    std::cout << buffered << std::endl;
+
     if (buffered == nullptr) {
       // nothing got buffered, Continue
       return Http::FilterDataStatus::Continue;
     }
+
+    std::cout << buffered->toString() << std::endl;
 
     ReceivedMessage received_message;
     Envoy::ProtobufUtil::JsonParseOptions parse_option;
@@ -90,7 +91,7 @@ Http::FilterDataStatus GcpEventsConvertFilter::decodeData(Buffer::Instance&, boo
       ENVOY_LOG(
           debug, 
           "Gcp Events Convert Filter log: update header {}", 
-          absl::StatusCodeToString(update_status));
+          update_status.ToString());
       return Http::FilterDataStatus::Continue;
     }
 
@@ -100,7 +101,7 @@ Http::FilterDataStatus GcpEventsConvertFilter::decodeData(Buffer::Instance&, boo
       ENVOY_LOG(
           debug, 
           "Gcp Events Convert Filter log: update body {}", 
-          absl::StatusCodeToString(update_status));
+          update_status.ToString());
       return Http::FilterDataStatus::Continue;
     }
 
@@ -113,6 +114,7 @@ Http::FilterDataStatus GcpEventsConvertFilter::decodeData(Buffer::Instance&, boo
   
   // for any request body that is not the end of HTTP request and not empty
   // Buffer the current HTTP request's body
+  std::cout << "return stop iteration and buffer" << std::endl;
   return Http::FilterDataStatus::StopIterationAndBuffer;
 }
 
@@ -126,11 +128,10 @@ void GcpEventsConvertFilter::setDecoderFilterCallbacks(Http::StreamDecoderFilter
 
 bool GcpEventsConvertFilter::isCloudEvent(const Http::RequestHeaderMap& headers) {
   absl::string_view  content_type = headers.getContentTypeValue();
-  return content_type == "application/grcp+json+cloudevent";
+  return content_type == matchContentType();
 }
 
 absl::Status GcpEventsConvertFilter::updateHeader() {
-  request_headers_->addCopy(headerKey(), headerValue());
   return absl::OkStatus();
 }
 

@@ -29,5 +29,6 @@ envoy_extension_cc_test(
         "//test/mocks/upstream:upstream_mocks",
         "//test/test_common:test_runtime_lib",
         "@envoy_api//envoy/extensions/filters/http/gcp_events_convert/v3:pkg_cc_proto",
+        "@com_google_googleapis//google/pubsub/v1:pubsub_cc_proto"
     ],
 )

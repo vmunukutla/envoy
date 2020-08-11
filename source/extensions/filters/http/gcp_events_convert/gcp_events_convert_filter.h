@@ -16,8 +16,7 @@ namespace GcpEventsConvert {
 struct GcpEventsConvertFilterConfig {
   GcpEventsConvertFilterConfig(const envoy::extensions::filters::http::gcp_events_convert::v3::GcpEventsConvert& proto_config);
 
-  const std::string key_;
-  const std::string val_;
+  const std::string content_type_;
 };
 
 using GcpEventsConvertFilterConfigSharedPtr = std::shared_ptr<GcpEventsConvertFilterConfig>;
@@ -40,9 +39,8 @@ public:
   void setDecoderFilterCallbacks(Http::StreamDecoderFilterCallbacks& callbacks) override;
 
 private:
-  const Http::LowerCaseString headerKey() const;
-  const std::string headerValue() const;
-  static bool isCloudEvent(const Http::RequestHeaderMap&);
+  const std::string matchContentType() const;
+  bool isCloudEvent(const Http::RequestHeaderMap&);
 
   // modify the data of HTTP request
   // 1. drain buffered data
