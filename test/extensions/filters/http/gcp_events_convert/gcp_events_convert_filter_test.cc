@@ -20,15 +20,14 @@
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 
+using google::pubsub::v1::PubsubMessage;
+using google::pubsub::v1::ReceivedMessage;
 using testing::NiceMock;
 
 namespace Envoy {
 namespace Extensions {
 namespace HttpFilters {
 namespace GcpEventsConvert {
-
-using google::pubsub::v1::PubsubMessage;
-using google::pubsub::v1::ReceivedMessage;
 
 // Unit test for Decode Headers
 TEST(GcpEventsConvertFilterUnitTest, DecoderHeaderWithCloudEventBody) {

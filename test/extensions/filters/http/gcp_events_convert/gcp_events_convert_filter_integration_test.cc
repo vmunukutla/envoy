@@ -98,13 +98,13 @@ TEST_P(GcpEventsConvertIntegrationTest, CloudEventNormalRequest) {
  * Edges cases that miss part of body, pass through
  */
 TEST_P(GcpEventsConvertIntegrationTest, CloudEventPartialMissingRequest) {
-  Http::TestRequestHeaderMapImpl headers{ 
-      {":method", "POST"}, 
-      {":scheme", "http"}, 
-      {":path", "/shelf"}, 
+  Http::TestRequestHeaderMapImpl headers{
+      {":method", "POST"},
+      {":scheme", "http"},
+      {":path", "/shelf"},
       {":authority", "host"},
       {"content-type", "application/grpc+cloudevent+json"}};
-  
+
   IntegrationCodecClientPtr codec_client;
   FakeHttpConnectionPtr fake_upstream_connection;
   FakeStreamPtr request_stream;
@@ -113,7 +113,7 @@ TEST_P(GcpEventsConvertIntegrationTest, CloudEventPartialMissingRequest) {
   auto encoder_decoder = codec_client->startRequest(headers);
   request_encoder_ = &encoder_decoder.first;
   IntegrationStreamDecoderPtr response = std::move(encoder_decoder.second);
-  
+
   // create a received message proto object
   ReceivedMessage received_message;
   received_message.set_ack_id("random ack id");
@@ -130,7 +130,7 @@ TEST_P(GcpEventsConvertIntegrationTest, CloudEventPartialMissingRequest) {
   pubsub_message.set_message_id("136969346945");
   pubsub_message.mutable_publish_time()->ParseFromString("2014-10-02T15:01:23Z");
   pubsub_message.set_ordering_key("");
-  
+
   // create a json string of received message
   std::string full_json_string;
   auto status = Envoy::ProtobufUtil::MessageToJsonString(received_message , &full_json_string);
@@ -138,7 +138,7 @@ TEST_P(GcpEventsConvertIntegrationTest, CloudEventPartialMissingRequest) {
 
   // another string missing the last 10 characters
   std::string partial_json_string = full_json_string.substr(0 , full_json_string.size() - 10); 
-  
+
   // send json string in multilple bodies @end_stream = false
   for (size_t index = 0; index < partial_json_string.size(); index += 10) {
     size_t length = (partial_json_string.size() - index) < 10 ? (partial_json_string.size() - index) : 10;
@@ -153,7 +153,7 @@ TEST_P(GcpEventsConvertIntegrationTest, CloudEventPartialMissingRequest) {
   ASSERT_TRUE(fake_upstream_connection->waitForNewStream(*dispatcher_, request_stream));
   ASSERT_TRUE(request_stream->waitForEndStream(*dispatcher_));
   response->waitForEndStream();
-  // filter should be pass through
+  // filter should be pass through since filter can not convert partial json string to proto object
   ASSERT_EQ(request_stream->body().toString(), partial_json_string);
   codec_client->close();
 }
@@ -163,12 +163,12 @@ TEST_P(GcpEventsConvertIntegrationTest, CloudEventPartialMissingRequest) {
  */
 TEST_P(GcpEventsConvertIntegrationTest, RandomRequest) {
   Http::TestRequestHeaderMapImpl headers{ 
-      {":method", "POST"}, 
-      {":scheme", "http"}, 
-      {":path", "/shelf"}, 
+      {":method", "POST"},
+      {":scheme", "http"},
+      {":path", "/shelf"},
       {":authority", "host"},
       {"content-type", "application/text"}};
-  
+
   IntegrationCodecClientPtr codec_client;
   FakeHttpConnectionPtr fake_upstream_connection;
   FakeStreamPtr request_stream;
@@ -177,7 +177,7 @@ TEST_P(GcpEventsConvertIntegrationTest, RandomRequest) {
   auto encoder_decoder = codec_client->startRequest(headers);
   request_encoder_ = &encoder_decoder.first;
   IntegrationStreamDecoderPtr response = std::move(encoder_decoder.second);
-  
+
   Buffer::OwnedImpl data1("hello ");
   codec_client->sendData(*request_encoder_, data1, false);
 
@@ -201,8 +201,8 @@ TEST_P(GcpEventsConvertIntegrationTest, RandomRequest) {
  */
 TEST_P(GcpEventsConvertIntegrationTest, HeaderOnlyRequest) {
   Http::TestRequestHeaderMapImpl headers{
-      {":method", "GET"}, 
-      {":path", "/"}, 
+      {":method", "GET"},
+      {":path", "/"},
       {":authority", "host"}};
 
   IntegrationCodecClientPtr codec_client;
@@ -217,8 +217,6 @@ TEST_P(GcpEventsConvertIntegrationTest, HeaderOnlyRequest) {
   response->waitForEndStream();
   codec_client->close();
 }
-
-
 
 } // namespace
 } // namespace Envoy
