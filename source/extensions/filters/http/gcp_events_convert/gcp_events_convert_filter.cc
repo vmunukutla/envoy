@@ -78,9 +78,7 @@ Http::FilterDataStatus GcpEventsConvertFilter::decodeData(Buffer::Instance&, boo
     
     if (!status.ok()) {
       // buffered data didn't successfully converted to proto. Continue
-      ENVOY_LOG(
-          debug, 
-          "Gcp Events Convert Filter log: fail to convert from body to proto object");
+      ENVOY_LOG(debug, "Gcp Events Convert Filter log: fail to convert from body to proto object");
       return Http::FilterDataStatus::Continue;
     }
 
@@ -90,27 +88,18 @@ Http::FilterDataStatus GcpEventsConvertFilter::decodeData(Buffer::Instance&, boo
     absl::Status update_status = updateHeader();
     if (!update_status.ok()){
       // something wrong while update header. Continue
-      ENVOY_LOG(
-          debug, 
-          "Gcp Events Convert Filter log: update header {}", 
-          update_status.ToString());
+      ENVOY_LOG(debug, "Gcp Events Convert Filter log: update header {}", update_status.ToString());
       return Http::FilterDataStatus::Continue;
     }
 
     update_status = updateBody();
     if (!update_status.ok()){
       // something wrong while rewrite the body. Continue
-      ENVOY_LOG(
-          debug, 
-          "Gcp Events Convert Filter log: update body {}", 
-          update_status.ToString());
+      ENVOY_LOG(debug, "Gcp Events Convert Filter log: update body {}", update_status.ToString());
       return Http::FilterDataStatus::Continue;
     }
 
-    ENVOY_LOG(
-        debug,
-        "after rewrite the buffered data : {}", 
-        decoder_callbacks_->decodingBuffer()->toString());
+    ENVOY_LOG(debug, "after rewrite the buffered data : {}", decoder_callbacks_->decodingBuffer()->toString());
     return Http::FilterDataStatus::Continue;
   }
   
@@ -128,17 +117,17 @@ void GcpEventsConvertFilter::setDecoderFilterCallbacks(Http::StreamDecoderFilter
 }
 
 bool GcpEventsConvertFilter::isCloudEvent(const Http::RequestHeaderMap& headers) {
-  absl::string_view  content_type = headers.getContentTypeValue();
-  return content_type == matchContentType();
+  return headers.getContentTypeValue() == matchContentType();
 }
 
 absl::Status GcpEventsConvertFilter::updateHeader() {
+  // TODO(h9jiang): implement detail logic for update Header
   return absl::OkStatus();
 }
 
 absl::Status GcpEventsConvertFilter::updateBody() {
-    decoder_callbacks_->modifyDecodingBuffer([](Buffer::Instance& buffered) {
-      // create a new buffer instance  
+    decoder_callbacks_->modifyDecodingBuffer([](Buffer::Instance& buffered) { 
+      // TODO(h9jiang): implement detail logic for update Body
       Buffer::OwnedImpl new_buffer;
       new_buffer.add("This is a example body");
       // drain the current buffered instance
