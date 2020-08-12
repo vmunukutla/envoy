@@ -33,7 +33,7 @@ GcpEventsConvertFilterConfig::GcpEventsConvertFilterConfig(
 GcpEventsConvertFilter::GcpEventsConvertFilter(GcpEventsConvertFilterConfigSharedPtr config)
     : has_cloud_event_(false), config_(config) {}
 
-GcpEventsConvertFilter::GcpEventsConvertFilter(GcpEventsConvertFilterConfigSharedPtr config, bool) 
+GcpEventsConvertFilter::GcpEventsConvertFilter(GcpEventsConvertFilterConfigSharedPtr config, bool)
     : has_cloud_event_(true), config_(config) {}
 
 void GcpEventsConvertFilter::onDestroy() {}
@@ -42,7 +42,8 @@ const std::string GcpEventsConvertFilter::matchContentType() const {
   return config_->content_type_;
 }
 
-Http::FilterHeadersStatus GcpEventsConvertFilter::decodeHeaders(Http::RequestHeaderMap& headers, bool end_stream) {
+Http::FilterHeadersStatus GcpEventsConvertFilter::decodeHeaders(Http::RequestHeaderMap& headers,
+                                                                bool end_stream) {
   if (end_stream || !isCloudEvent(headers)) {
     // if this is a header-only request or it's not a request containing cloud event
     // we don't need to do any buffering
@@ -74,8 +75,10 @@ Http::FilterDataStatus GcpEventsConvertFilter::decodeData(Buffer::Instance&, boo
 
     ReceivedMessage received_message;
     Envoy::ProtobufUtil::JsonParseOptions parse_option;
-    auto status = Envoy::ProtobufUtil::JsonStringToMessage(buffered->toString(), &received_message, parse_option);
-    
+    auto status = Envoy::ProtobufUtil::JsonStringToMessage(buffered->toString(),
+                                                           &received_message,
+                                                           parse_option);
+
     if (!status.ok()) {
       // buffered data didn't successfully converted to proto. Continue
       ENVOY_LOG(debug, "Gcp Events Convert Filter log: fail to convert from body to proto object");
@@ -84,21 +87,22 @@ Http::FilterDataStatus GcpEventsConvertFilter::decodeData(Buffer::Instance&, boo
 
     // TODO(h9jiang): Use Cloud Event SDK to convert Pubsub Message to HTTP Binding
     absl::Status update_status = updateHeader();
-    if (!update_status.ok()){
+    if (!update_status.ok()) {
       ENVOY_LOG(debug, "Gcp Events Convert Filter log: update header {}", update_status.ToString());
       return Http::FilterDataStatus::Continue;
     }
 
     update_status = updateBody();
-    if (!update_status.ok()){
+    if (!update_status.ok()) {
       ENVOY_LOG(debug, "Gcp Events Convert Filter log: update body {}", update_status.ToString());
       return Http::FilterDataStatus::Continue;
     }
 
-    ENVOY_LOG(debug, "after rewrite the buffered data : {}", decoder_callbacks_->decodingBuffer()->toString());
+    ENVOY_LOG(debug, "after rewrite the buffered data : {}",
+              decoder_callbacks_->decodingBuffer()->toString());
     return Http::FilterDataStatus::Continue;
   }
-  
+
   // For any request body that is not the end of HTTP request and not empty
   // Buffer the current HTTP request's body
   return Http::FilterDataStatus::StopIterationAndBuffer;
@@ -122,7 +126,7 @@ absl::Status GcpEventsConvertFilter::updateHeader() {
 }
 
 absl::Status GcpEventsConvertFilter::updateBody() {
-    decoder_callbacks_->modifyDecodingBuffer([](Buffer::Instance& buffered) { 
+    decoder_callbacks_->modifyDecodingBuffer([](Buffer::Instance& buffered) {
       // TODO(h9jiang): implement detail logic for update Body
       Buffer::OwnedImpl new_buffer;
       new_buffer.add("This is a example body");

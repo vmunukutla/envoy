@@ -89,14 +89,14 @@ TEST(GcpEventsConvertFilterUnitTest, DecodeDataWithCloudEvent) {
   std::string json_string;
   auto status = Envoy::ProtobufUtil::MessageToJsonString(received_message , &json_string);
   ASSERT_TRUE(status.ok());
-  
+
   // separate string into multilple decodeData call
   for (size_t index = 0; index < json_string.size(); index += 10) {
     size_t length = (json_string.size() - index) < 10 ? (json_string.size() - index) : 10;
     Buffer::OwnedImpl data(json_string.substr(index , length));
     EXPECT_EQ(Http::FilterDataStatus::StopIterationAndBuffer, filter.decodeData(data, false));
   }
-  
+
   Buffer::OwnedImpl data;
   EXPECT_EQ(Http::FilterDataStatus::Continue, filter.decodeData(data, true));
 }
@@ -107,10 +107,10 @@ TEST(GcpEventsConvertFilterUnitTest, DecodeDataWithRandomBody) {
   GcpEventsConvertFilter filter(std::make_shared<GcpEventsConvertFilterConfig>(proto_config));
   NiceMock<Http::MockStreamDecoderFilterCallbacks> callbacks;
   filter.setDecoderFilterCallbacks(callbacks);
-  
+
   Buffer::OwnedImpl data1("Hello");
   EXPECT_EQ(Http::FilterDataStatus::Continue, filter.decodeData(data1, false));
-  
+
   Buffer::OwnedImpl data2;
   EXPECT_EQ(Http::FilterDataStatus::Continue, filter.decodeData(data2, true));
 }

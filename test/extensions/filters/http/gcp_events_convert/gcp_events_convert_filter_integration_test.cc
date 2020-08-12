@@ -37,13 +37,13 @@ INSTANTIATE_TEST_SUITE_P(IpVersions, GcpEventsConvertIntegrationTest,
  * Normal cases that will convert Pubsub Binding to HTTP Binding
  */
 TEST_P(GcpEventsConvertIntegrationTest, CloudEventNormalRequest) {
-  Http::TestRequestHeaderMapImpl headers{ 
-      {":method", "POST"}, 
-      {":scheme", "http"}, 
-      {":path", "/shelf"}, 
+  Http::TestRequestHeaderMapImpl headers{
+      {":method", "POST"},
+      {":scheme", "http"},
+      {":path", "/shelf"},
       {":authority", "host"},
       {"content-type", "application/grpc+cloudevent+json"}};
-  
+
   IntegrationCodecClientPtr codec_client;
   FakeHttpConnectionPtr fake_upstream_connection;
   FakeStreamPtr request_stream;
@@ -52,7 +52,7 @@ TEST_P(GcpEventsConvertIntegrationTest, CloudEventNormalRequest) {
   auto encoder_decoder = codec_client->startRequest(headers);
   request_encoder_ = &encoder_decoder.first;
   IntegrationStreamDecoderPtr response = std::move(encoder_decoder.second);
-  
+
   // create a received message proto object
   ReceivedMessage received_message;
   received_message.set_ack_id("random ack id");
@@ -69,12 +69,12 @@ TEST_P(GcpEventsConvertIntegrationTest, CloudEventNormalRequest) {
   pubsub_message.set_message_id("136969346945");
   pubsub_message.mutable_publish_time()->ParseFromString("2014-10-02T15:01:23Z");
   pubsub_message.set_ordering_key("");
-  
+
   // create a json string of received message
   std::string json_string;
   auto status = Envoy::ProtobufUtil::MessageToJsonString(received_message , &json_string);
   ASSERT_TRUE(status.ok());
-  
+
   // send json string in multilple bodies @end_stream = false
   for (size_t index = 0; index < json_string.size(); index += 10) {
     size_t length = (json_string.size() - index) < 10 ? (json_string.size() - index) : 10;
@@ -137,7 +137,7 @@ TEST_P(GcpEventsConvertIntegrationTest, CloudEventPartialMissingRequest) {
   ASSERT_TRUE(status.ok());
 
   // another string missing the last 10 characters
-  std::string partial_json_string = full_json_string.substr(0 , full_json_string.size() - 10); 
+  std::string partial_json_string = full_json_string.substr(0 , full_json_string.size() - 10);
 
   // send json string in multilple bodies @end_stream = false
   for (size_t index = 0; index < partial_json_string.size(); index += 10) {
@@ -162,7 +162,7 @@ TEST_P(GcpEventsConvertIntegrationTest, CloudEventPartialMissingRequest) {
  * Unrelated cases, pass through
  */
 TEST_P(GcpEventsConvertIntegrationTest, RandomRequest) {
-  Http::TestRequestHeaderMapImpl headers{ 
+  Http::TestRequestHeaderMapImpl headers{
       {":method", "POST"},
       {":scheme", "http"},
       {":path", "/shelf"},

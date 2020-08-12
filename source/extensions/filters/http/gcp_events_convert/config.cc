@@ -1,3 +1,6 @@
+#include <memory>
+#include <string>
+
 #include "extensions/filters/http/gcp_events_convert/config.h"
 
 #include "envoy/extensions/filters/http/gcp_events_convert/v3/gcp_events_convert.pb.h"
@@ -16,7 +19,7 @@ namespace GcpEventsConvert {
 Http::FilterFactoryCb GcpEventsConvertFilterFactory::createFilterFactoryFromProtoTyped(
     const envoy::extensions::filters::http::gcp_events_convert::v3::GcpEventsConvert& proto_config,
     const std::string&, Server::Configuration::FactoryContext&) {
-  GcpEventsConvertFilterConfigSharedPtr config = 
+  GcpEventsConvertFilterConfigSharedPtr config =
               std::make_shared<GcpEventsConvertFilterConfig>(proto_config);
 
   return [config](Http::FilterChainFactoryCallbacks& callbacks) -> void {

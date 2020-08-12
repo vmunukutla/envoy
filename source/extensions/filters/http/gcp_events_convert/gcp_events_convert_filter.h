@@ -1,5 +1,6 @@
 #pragma once
 
+#include <memory>
 #include <string>
 
 #include "envoy/server/filter_config.h"
@@ -24,7 +25,7 @@ using GcpEventsConvertFilterConfigSharedPtr = std::shared_ptr<GcpEventsConvertFi
 /**
  * The filter instance for convert Cloud Event Pubsub Binding to HTTP binding
  */
-class GcpEventsConvertFilter : public Http::StreamDecoderFilter, 
+class GcpEventsConvertFilter : public Http::StreamDecoderFilter,
                                public Logger::Loggable<Logger::Id::filter> {
 public:
   // normal constructor
@@ -35,7 +36,7 @@ public:
   void onDestroy() override;
 
   // Http::StreamDecoderFilter
-  Http::FilterHeadersStatus decodeHeaders(Http::RequestHeaderMap& headers, 
+  Http::FilterHeadersStatus decodeHeaders(Http::RequestHeaderMap& headers,
                                           bool end_stream) override;
   Http::FilterDataStatus decodeData(Buffer::Instance& data, bool end_stream) override;
   Http::FilterTrailersStatus decodeTrailers(Http::RequestTrailerMap& trailers) override;
@@ -53,9 +54,9 @@ private:
   // modify the header of HTTP request
   // 1. replace header's content type with ce-datacontenttype
   // 2. add cloud event information, ce-version, ce-type...... (except ce's data)
-  // 3. [TBD] add Ack ID into header 
+  // 3. [TBD] add Ack ID into header
   absl::Status updateHeader();
-  
+
   Http::RequestHeaderMap* request_headers_ = nullptr;
   bool has_cloud_event_ = false;
   const GcpEventsConvertFilterConfigSharedPtr config_;
