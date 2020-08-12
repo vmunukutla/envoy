@@ -1,5 +1,7 @@
 #pragma once
 
+#include <string>
+
 #include "envoy/extensions/filters/http/gcp_events_convert/v3/gcp_events_convert.pb.h"
 #include "envoy/extensions/filters/http/gcp_events_convert/v3/gcp_events_convert.pb.validate.h"
 
