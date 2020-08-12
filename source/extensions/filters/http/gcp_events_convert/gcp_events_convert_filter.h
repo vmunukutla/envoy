@@ -13,7 +13,7 @@ namespace Extensions {
 namespace HttpFilters {
 namespace GcpEventsConvert {
 
-struct GcpEventsConvertFilterConfig {
+struct GcpEventsConvertFilterConfig : public Router::RouteSpecificFilterConfig {
   GcpEventsConvertFilterConfig(const envoy::extensions::filters::http::gcp_events_convert::v3::GcpEventsConvert& proto_config);
 
   const std::string content_type_;
@@ -24,10 +24,13 @@ using GcpEventsConvertFilterConfigSharedPtr = std::shared_ptr<GcpEventsConvertFi
 /**
  * The filter instance for convert Cloud Event Pubsub Binding to HTTP binding
  */
-class GcpEventsConvertFilter : public Http::StreamDecoderFilter, public Logger::Loggable<Logger::Id::filter> {
+class GcpEventsConvertFilter : public Http::StreamDecoderFilter, 
+                               public Logger::Loggable<Logger::Id::filter> {
 public:
+  // normal constructor
   GcpEventsConvertFilter(GcpEventsConvertFilterConfigSharedPtr config);
-
+  // special constructor only used for testing purpose
+  GcpEventsConvertFilter(GcpEventsConvertFilterConfigSharedPtr config, bool test);
   // Http::StreamFilterBase
   void onDestroy() override;
 

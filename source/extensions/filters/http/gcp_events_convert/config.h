@@ -19,7 +19,6 @@ class GcpEventsConvertFilterFactory
 public:
   GcpEventsConvertFilterFactory() : FactoryBase(HttpFilterNames::get().GcpEventsConvert) {}
 
-private:
   Http::FilterFactoryCb createFilterFactoryFromProtoTyped(
       const envoy::extensions::filters::http::gcp_events_convert::v3::GcpEventsConvert& proto_config,
       const std::string& stats_prefix, Server::Configuration::FactoryContext& context) override;
