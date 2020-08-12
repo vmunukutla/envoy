@@ -20,6 +20,8 @@
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 
+using testing::NiceMock;
+
 namespace Envoy {
 namespace Extensions {
 namespace HttpFilters {
@@ -61,18 +63,17 @@ TEST(GcpEventsConvertFilterUnitTest, DecodeHeaderWithRandomContent) {
 
 // Unit test for Decode Data
 TEST(GcpEventsConvertFilterUnitTest, DecodeDataWithCloudEvent) {
-  envoy::extensions::filters::http::gcp_events_convert::v3::GcpEventsConvert config;
-  config.set_content_type("application/grpc+cloudevent+json");
-  GcpEventsConvertFilter filter(std::make_shared<GcpEventsConvertFilterConfig>(config));
-  Http::TestRequestHeaderMapImpl headers({{"content-type", "application/grpc+cloudevent+json"}});
-
-  EXPECT_EQ(Http::FilterHeadersStatus::StopIteration, filter.decodeHeaders(headers, false));
+  envoy::extensions::filters::http::gcp_events_convert::v3::GcpEventsConvert proto_config;
+  proto_config.set_content_type("application/grpc+cloudevent+json");
+  GcpEventsConvertFilter filter(std::make_shared<GcpEventsConvertFilterConfig>(proto_config) , true);
+  NiceMock<Http::MockStreamDecoderFilterCallbacks> callbacks;
+  filter.setDecoderFilterCallbacks(callbacks);
 
   // create a received message proto object
   ReceivedMessage received_message;
   received_message.set_ack_id("random ack id");
   received_message.set_delivery_attempt(3);
-  PubsubMessage pubsub_message = *received_message.mutable_message();
+  PubsubMessage& pubsub_message = *received_message.mutable_message();
   auto attributes = *pubsub_message.mutable_attributes();
   attributes["ce-specversion"] = "1.0";
   attributes["ce-type"] = "com.example.some_event";
@@ -80,27 +81,39 @@ TEST(GcpEventsConvertFilterUnitTest, DecodeDataWithCloudEvent) {
   attributes["ce-id"] = "1234-1234-1234";
   attributes["ce-source"] = "/mycontext/subcontext";
   attributes["ce-datacontenttype"] = "application/text; charset=utf-8";
-
   pubsub_message.set_data("cloud event data payload");
   pubsub_message.set_message_id("136969346945");
   pubsub_message.mutable_publish_time()->ParseFromString("2014-10-02T15:01:23Z");
   pubsub_message.set_ordering_key("");
-  
+
+  // create a json string of received message
   std::string json_string;
   auto status = Envoy::ProtobufUtil::MessageToJsonString(received_message , &json_string);
   ASSERT_TRUE(status.ok());
-  std::cout << "-1" << std::endl;
+  
+  // separate string into multilple decodeData call
   for (size_t index = 0; index < json_string.size(); index += 10) {
     size_t length = (json_string.size() - index) < 10 ? (json_string.size() - index) : 10;
     Buffer::OwnedImpl data(json_string.substr(index , length));
-    EXPECT_EQ(Http::FilterDataStatus::StopIterationAndBuffer, 
-              filter.decodeData(data, false));
+    EXPECT_EQ(Http::FilterDataStatus::StopIterationAndBuffer, filter.decodeData(data, false));
   }
-  std::cout << "-2" << std::endl;
-  Buffer::OwnedImpl data(" ");
-  std::cout << "-3" << std::endl;
-  EXPECT_EQ(Http::FilterDataStatus::Continue, 
-            filter.decodeData(data, true));
+  
+  Buffer::OwnedImpl data;
+  EXPECT_EQ(Http::FilterDataStatus::Continue, filter.decodeData(data, true));
+}
+
+TEST(GcpEventsConvertFilterUnitTest, DecodeDataWithRandomBody) {
+  envoy::extensions::filters::http::gcp_events_convert::v3::GcpEventsConvert proto_config;
+  proto_config.set_content_type("application/grpc+cloudevent+json");
+  GcpEventsConvertFilter filter(std::make_shared<GcpEventsConvertFilterConfig>(proto_config));
+  NiceMock<Http::MockStreamDecoderFilterCallbacks> callbacks;
+  filter.setDecoderFilterCallbacks(callbacks);
+  
+  Buffer::OwnedImpl data1("Hello");
+  EXPECT_EQ(Http::FilterDataStatus::Continue, filter.decodeData(data1, false));
+  
+  Buffer::OwnedImpl data2;
+  EXPECT_EQ(Http::FilterDataStatus::Continue, filter.decodeData(data2, true));
 }
 
 } // namespace GcpEventsConvert
