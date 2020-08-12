@@ -29,7 +29,7 @@ class GcpEventsConvertFilter : public Http::StreamDecoderFilter,
 public:
   // normal constructor
   GcpEventsConvertFilter(GcpEventsConvertFilterConfigSharedPtr config);
-  // special constructor only used for testing purpose
+  // special constructor only used for TEST purpose
   GcpEventsConvertFilter(GcpEventsConvertFilterConfigSharedPtr config, bool test);
   // Http::StreamFilterBase
   void onDestroy() override;

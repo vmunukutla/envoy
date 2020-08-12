@@ -82,19 +82,15 @@ Http::FilterDataStatus GcpEventsConvertFilter::decodeData(Buffer::Instance&, boo
       return Http::FilterDataStatus::Continue;
     }
 
-    // const PubsubMessage& pubsub_message = received_message.message();
-
     // TODO(h9jiang): Use Cloud Event SDK to convert Pubsub Message to HTTP Binding
     absl::Status update_status = updateHeader();
     if (!update_status.ok()){
-      // something wrong while update header. Continue
       ENVOY_LOG(debug, "Gcp Events Convert Filter log: update header {}", update_status.ToString());
       return Http::FilterDataStatus::Continue;
     }
 
     update_status = updateBody();
     if (!update_status.ok()){
-      // something wrong while rewrite the body. Continue
       ENVOY_LOG(debug, "Gcp Events Convert Filter log: update body {}", update_status.ToString());
       return Http::FilterDataStatus::Continue;
     }
@@ -103,7 +99,7 @@ Http::FilterDataStatus GcpEventsConvertFilter::decodeData(Buffer::Instance&, boo
     return Http::FilterDataStatus::Continue;
   }
   
-  // for any request body that is not the end of HTTP request and not empty
+  // For any request body that is not the end of HTTP request and not empty
   // Buffer the current HTTP request's body
   return Http::FilterDataStatus::StopIterationAndBuffer;
 }
