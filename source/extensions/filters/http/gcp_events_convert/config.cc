@@ -1,7 +1,7 @@
+#include "extensions/filters/http/gcp_events_convert/config.h"
+
 #include <memory>
 #include <string>
-
-#include "extensions/filters/http/gcp_events_convert/config.h"
 
 #include "envoy/extensions/filters/http/gcp_events_convert/v3/gcp_events_convert.pb.h"
 #include "envoy/extensions/filters/http/gcp_events_convert/v3/gcp_events_convert.pb.validate.h"
@@ -20,7 +20,7 @@ Http::FilterFactoryCb GcpEventsConvertFilterFactory::createFilterFactoryFromProt
     const envoy::extensions::filters::http::gcp_events_convert::v3::GcpEventsConvert& proto_config,
     const std::string&, Server::Configuration::FactoryContext&) {
   GcpEventsConvertFilterConfigSharedPtr config =
-              std::make_shared<GcpEventsConvertFilterConfig>(proto_config);
+      std::make_shared<GcpEventsConvertFilterConfig>(proto_config);
 
   return [config](Http::FilterChainFactoryCallbacks& callbacks) -> void {
     callbacks.addStreamDecoderFilter(std::make_shared<GcpEventsConvertFilter>(config));
