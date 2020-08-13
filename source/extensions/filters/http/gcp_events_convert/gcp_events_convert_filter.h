@@ -3,11 +3,10 @@
 #include <memory>
 #include <string>
 
+#include "envoy/extensions/filters/http/gcp_events_convert/v3/gcp_events_convert.pb.h"
 #include "envoy/server/filter_config.h"
 
 #include "common/common/logger.h"
-
-#include "envoy/extensions/filters/http/gcp_events_convert/v3/gcp_events_convert.pb.h"
 
 namespace Envoy {
 namespace Extensions {
@@ -15,7 +14,9 @@ namespace HttpFilters {
 namespace GcpEventsConvert {
 
 struct GcpEventsConvertFilterConfig : public Router::RouteSpecificFilterConfig {
-  GcpEventsConvertFilterConfig(const envoy::extensions::filters::http::gcp_events_convert::v3::GcpEventsConvert& proto_config);
+  GcpEventsConvertFilterConfig(
+      const envoy::extensions::filters::http::gcp_events_convert::v3::GcpEventsConvert&
+          proto_config);
 
   const std::string content_type_;
 };

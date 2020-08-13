@@ -58,7 +58,8 @@ Http::FilterHeadersStatus GcpEventsConvertFilter::decodeHeaders(Http::RequestHea
 
 Http::FilterDataStatus GcpEventsConvertFilter::decodeData(Buffer::Instance&, bool end_stream) {
   // for any requst body that is not related to cloud event. Pass through
-  if (!has_cloud_event_) return Http::FilterDataStatus::Continue;
+  if (!has_cloud_event_)
+    return Http::FilterDataStatus::Continue;
 
   // wait for all the body has arrived.
   if (end_stream) {
@@ -75,8 +76,7 @@ Http::FilterDataStatus GcpEventsConvertFilter::decodeData(Buffer::Instance&, boo
 
     ReceivedMessage received_message;
     Envoy::ProtobufUtil::JsonParseOptions parse_option;
-    auto status = Envoy::ProtobufUtil::JsonStringToMessage(buffered->toString(),
-                                                           &received_message,
+    auto status = Envoy::ProtobufUtil::JsonStringToMessage(buffered->toString(), &received_message,
                                                            parse_option);
 
     if (!status.ok()) {
@@ -112,7 +112,8 @@ Http::FilterTrailersStatus GcpEventsConvertFilter::decodeTrailers(Http::RequestT
   return Http::FilterTrailersStatus::Continue;
 }
 
-void GcpEventsConvertFilter::setDecoderFilterCallbacks(Http::StreamDecoderFilterCallbacks& callbacks) {
+void GcpEventsConvertFilter::setDecoderFilterCallbacks(
+    Http::StreamDecoderFilterCallbacks& callbacks) {
   decoder_callbacks_ = &callbacks;
 }
 
@@ -126,16 +127,16 @@ absl::Status GcpEventsConvertFilter::updateHeader() {
 }
 
 absl::Status GcpEventsConvertFilter::updateBody() {
-    decoder_callbacks_->modifyDecodingBuffer([](Buffer::Instance& buffered) {
-      // TODO(h9jiang): implement detail logic for update Body
-      Buffer::OwnedImpl new_buffer;
-      new_buffer.add("This is a example body");
-      // drain the current buffered instance
-      buffered.drain(buffered.length());
-      // replace the current buffered instance with the new buffer instance
-      buffered.move(new_buffer);
-    });
-    return absl::OkStatus();
+  decoder_callbacks_->modifyDecodingBuffer([](Buffer::Instance& buffered) {
+    // TODO(h9jiang): implement detail logic for update Body
+    Buffer::OwnedImpl new_buffer;
+    new_buffer.add("This is a example body");
+    // drain the current buffered instance
+    buffered.drain(buffered.length());
+    // replace the current buffered instance with the new buffer instance
+    buffered.move(new_buffer);
+  });
+  return absl::OkStatus();
 }
 
 } // namespace GcpEventsConvert

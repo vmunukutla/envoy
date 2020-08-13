@@ -3,10 +3,10 @@
 
 #include "common/protobuf/utility.h"
 
-#include "google/pubsub/v1/pubsub.pb.h"
-
 #include "test/integration/http_integration.h"
 #include "test/integration/http_protocol_integration.h"
+
+#include "google/pubsub/v1/pubsub.pb.h"
 
 namespace Envoy {
 namespace {
@@ -25,24 +25,26 @@ public:
   void SetUp() override { initialize(); }
 
   void initialize() override {
-    config_helper_.addFilter("{ name: envoy.filters.http.gcp_events_convert , typed_config: { \"@type\": type.googleapis.com/envoy.extensions.filters.http.gcp_events_convert.v3.GcpEventsConvert, content_type: application/grpc+cloudevent+json} }");
+    config_helper_.addFilter(
+        "{ name: envoy.filters.http.gcp_events_convert , typed_config: { \"@type\": "
+        "type.googleapis.com/envoy.extensions.filters.http.gcp_events_convert.v3.GcpEventsConvert, "
+        "content_type: application/grpc+cloudevent+json} }");
     HttpIntegrationTest::initialize();
   }
 };
 
 INSTANTIATE_TEST_SUITE_P(IpVersions, GcpEventsConvertIntegrationTest,
-                        testing::ValuesIn(TestEnvironment::getIpVersionsForTest()));
+                         testing::ValuesIn(TestEnvironment::getIpVersionsForTest()));
 
 /**
  * Normal cases that will convert Pubsub Binding to HTTP Binding
  */
 TEST_P(GcpEventsConvertIntegrationTest, CloudEventNormalRequest) {
-  Http::TestRequestHeaderMapImpl headers{
-      {":method", "POST"},
-      {":scheme", "http"},
-      {":path", "/shelf"},
-      {":authority", "host"},
-      {"content-type", "application/grpc+cloudevent+json"}};
+  Http::TestRequestHeaderMapImpl headers{{":method", "POST"},
+                                         {":scheme", "http"},
+                                         {":path", "/shelf"},
+                                         {":authority", "host"},
+                                         {"content-type", "application/grpc+cloudevent+json"}};
 
   IntegrationCodecClientPtr codec_client;
   FakeHttpConnectionPtr fake_upstream_connection;
@@ -72,13 +74,13 @@ TEST_P(GcpEventsConvertIntegrationTest, CloudEventNormalRequest) {
 
   // create a json string of received message
   std::string json_string;
-  auto status = Envoy::ProtobufUtil::MessageToJsonString(received_message , &json_string);
+  auto status = Envoy::ProtobufUtil::MessageToJsonString(received_message, &json_string);
   ASSERT_TRUE(status.ok());
 
   // send json string in multilple bodies @end_stream = false
   for (size_t index = 0; index < json_string.size(); index += 10) {
     size_t length = (json_string.size() - index) < 10 ? (json_string.size() - index) : 10;
-    Buffer::OwnedImpl data(json_string.substr(index , length));
+    Buffer::OwnedImpl data(json_string.substr(index, length));
     codec_client->sendData(*request_encoder_, data, false);
   }
   // send the last piece of json string   @end_stream = true
@@ -98,12 +100,11 @@ TEST_P(GcpEventsConvertIntegrationTest, CloudEventNormalRequest) {
  * Edges cases that miss part of body, pass through
  */
 TEST_P(GcpEventsConvertIntegrationTest, CloudEventPartialMissingRequest) {
-  Http::TestRequestHeaderMapImpl headers{
-      {":method", "POST"},
-      {":scheme", "http"},
-      {":path", "/shelf"},
-      {":authority", "host"},
-      {"content-type", "application/grpc+cloudevent+json"}};
+  Http::TestRequestHeaderMapImpl headers{{":method", "POST"},
+                                         {":scheme", "http"},
+                                         {":path", "/shelf"},
+                                         {":authority", "host"},
+                                         {"content-type", "application/grpc+cloudevent+json"}};
 
   IntegrationCodecClientPtr codec_client;
   FakeHttpConnectionPtr fake_upstream_connection;
@@ -133,16 +134,17 @@ TEST_P(GcpEventsConvertIntegrationTest, CloudEventPartialMissingRequest) {
 
   // create a json string of received message
   std::string full_json_string;
-  auto status = Envoy::ProtobufUtil::MessageToJsonString(received_message , &full_json_string);
+  auto status = Envoy::ProtobufUtil::MessageToJsonString(received_message, &full_json_string);
   ASSERT_TRUE(status.ok());
 
   // another string missing the last 10 characters
-  std::string partial_json_string = full_json_string.substr(0 , full_json_string.size() - 10);
+  std::string partial_json_string = full_json_string.substr(0, full_json_string.size() - 10);
 
   // send json string in multilple bodies @end_stream = false
   for (size_t index = 0; index < partial_json_string.size(); index += 10) {
-    size_t length = (partial_json_string.size() - index) < 10 ? (partial_json_string.size() - index) : 10;
-    Buffer::OwnedImpl data(partial_json_string.substr(index , length));
+    size_t length =
+        (partial_json_string.size() - index) < 10 ? (partial_json_string.size() - index) : 10;
+    Buffer::OwnedImpl data(partial_json_string.substr(index, length));
     codec_client->sendData(*request_encoder_, data, false);
   }
   // send the last piece of json string   @end_stream = true
@@ -162,12 +164,11 @@ TEST_P(GcpEventsConvertIntegrationTest, CloudEventPartialMissingRequest) {
  * Unrelated cases, pass through
  */
 TEST_P(GcpEventsConvertIntegrationTest, RandomRequest) {
-  Http::TestRequestHeaderMapImpl headers{
-      {":method", "POST"},
-      {":scheme", "http"},
-      {":path", "/shelf"},
-      {":authority", "host"},
-      {"content-type", "application/text"}};
+  Http::TestRequestHeaderMapImpl headers{{":method", "POST"},
+                                         {":scheme", "http"},
+                                         {":path", "/shelf"},
+                                         {":authority", "host"},
+                                         {"content-type", "application/text"}};
 
   IntegrationCodecClientPtr codec_client;
   FakeHttpConnectionPtr fake_upstream_connection;
@@ -201,9 +202,7 @@ TEST_P(GcpEventsConvertIntegrationTest, RandomRequest) {
  */
 TEST_P(GcpEventsConvertIntegrationTest, HeaderOnlyRequest) {
   Http::TestRequestHeaderMapImpl headers{
-      {":method", "GET"},
-      {":path", "/"},
-      {":authority", "host"}};
+      {":method", "GET"}, {":path", "/"}, {":authority", "host"}};
 
   IntegrationCodecClientPtr codec_client;
   FakeHttpConnectionPtr fake_upstream_connection;
