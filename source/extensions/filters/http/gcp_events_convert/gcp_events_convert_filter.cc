@@ -41,13 +41,13 @@ const std::string GcpEventsConvertFilter::headerValue() const {
 }
 
 Http::FilterHeadersStatus GcpEventsConvertFilter::decodeHeaders(Http::RequestHeaderMap& headers, bool) {
-  // TODO(h9jiang): Implement the logic of decodeHeaders
+  // TODO(#1): Implement the logic of decodeHeaders
   headers.addCopy(headerKey() , headerValue());
   return Http::FilterHeadersStatus::Continue;
 }
 
 Http::FilterDataStatus GcpEventsConvertFilter::decodeData(Buffer::Instance&, bool) {
-  // TODO(h9jiang): Implement the logic of decodeData
+  // TODO(#1): Implement the logic of decodeData
   return Http::FilterDataStatus::Continue;
 }
 
