@@ -5,16 +5,11 @@
 #include <string>
 
 namespace Envoy {
-namespace Demuxer {
+namespace GrpcStreamDemuxer {
 
-class GRPCStreamDemuxer {
-
+class GrpcStreamDemuxer {
 public:
-  /**
-   * Create a GRPCStreamDemuxer instance by setting private fields to paramaters
-   * passed in.
-   */
-  GRPCStreamDemuxer(std::string subscription, std::string address, int port);
+  GrpcStreamDemuxer(const std::string& subscription, const std::string& address, int port);
 
   /**
    * Create a streaming pull connection to subscription_ and process incoming
@@ -30,8 +25,8 @@ private:
   int port_;
 };
 
-using GRPCStreamDemuxerPtr = std::unique_ptr<GRPCStreamDemuxer>;
+using GrpcStreamDemuxerPtr = std::unique_ptr<GrpcStreamDemuxer>;
 
-} // namespace Demuxer
+} // namespace GrpcStreamDemuxer
 } // namespace Envoy
 

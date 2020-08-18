@@ -125,10 +125,7 @@ private:
   void initializeStatsSinks(const envoy::config::bootstrap::v3::Bootstrap& bootstrap,
                             Instance& server);
 
-  /**
-   * Initialize gRPC stream demuxers.
-   */
-  void initializeGRPCStreamDemuxers();
+  void initializeGrpcStreamDemuxers();
   
   std::unique_ptr<Upstream::ClusterManager> cluster_manager_;
   std::list<Stats::SinkPtr> stats_sinks_;

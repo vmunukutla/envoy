@@ -11,8 +11,8 @@ envoy_package()
 
 envoy_cc_library(
     name = "grpc_stream_demuxer",
-    srcs = ["demuxer.cc"],
-    hdrs = ["demuxer.h"],
+    srcs = ["grpc_stream_demuxer.cc"],
+    hdrs = ["grpc_stream_demuxer.h"],
 )
 
 envoy_cc_library(
