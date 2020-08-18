@@ -32,7 +32,7 @@ public:
   // normal constructor
   GcpEventsConvertFilter(GcpEventsConvertFilterConfigSharedPtr config);
   // special constructor only used for TEST purpose
-  GcpEventsConvertFilter(GcpEventsConvertFilterConfigSharedPtr config, bool test);
+  GcpEventsConvertFilter(GcpEventsConvertFilterConfigSharedPtr config, bool has_cloud_event);
   // Http::StreamFilterBase
   void onDestroy() override;
 
@@ -44,8 +44,7 @@ public:
   void setDecoderFilterCallbacks(Http::StreamDecoderFilterCallbacks& callbacks) override;
 
 private:
-  const std::string matchContentType() const;
-  bool isCloudEvent(const Http::RequestHeaderMap&);
+  bool isCloudEvent(const Http::RequestHeaderMap& headers) const;
 
   // modify the data of HTTP request
   // 1. drain buffered data
