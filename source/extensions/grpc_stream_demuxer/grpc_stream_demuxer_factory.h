@@ -2,25 +2,24 @@
 
 #include "envoy/config/typed_config.h"
 
-#include "extensions/grpc_stream_demuxer/demuxer.h"
+#include "extensions/grpc_stream_demuxer/grpc_stream_demuxer.h"
 
 
 namespace Envoy {
-namespace Demuxer {
+namespace GrpcStreamDemuxer {
 
-class GRPCStreamDemuxerFactory : public Config::UntypedFactory {
+class GrpcStreamDemuxerFactory : public Config::UntypedFactory {
 public:
-  ~GRPCStreamDemuxerFactory() override = default;
+  ~GrpcStreamDemuxerFactory() override = default;
 
   /**
-   * Create a GRPCStreamDemuxer instance.
    * TODO (vmunukutla): Pass in GRPCStreamDemuxer proto as parameter after
    * fixing current build issues that come with adding GRPCStreamDemuxer proto
    * to codebase.
    */
-  virtual GRPCStreamDemuxerPtr createGPRCStreamDemuxer() PURE;
+  virtual GrpcStreamDemuxerPtr createGrpcStreamDemuxer() PURE;
   std::string category() const override { return "envoy.grpc_stream_demuxer"; }
 };
 
-} // namespace Demuxer
+} // namespace GrpcStreamDemuxer
 } // namespace Envoy

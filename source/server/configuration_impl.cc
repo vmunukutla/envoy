@@ -83,11 +83,10 @@ void MainImpl::initialize(const envoy::config::bootstrap::v3::Bootstrap& bootstr
     server.listenerManager().addOrUpdateListener(listeners[i], "", false);
   }
 
-  // Commenting this out for now because calling it unconditionally initializes
-  // a GRPCStreamDemuxer, whereas intended behavior is to only initialize
-  // GRPCStreamDemuxers if yaml config provides a specification for it.
+  // TODO: Implement initializeGrpcStreamDemuxers to parse the grpc_stream_demuxers
+  // out of the bootstrap and create GrpcStreamDemuxer instances.
   
-  // initializeGRPCStreamDemuxers();
+  // initializeGrpcStreamDemuxers(bootstrap);
 
   stats_flush_interval_ =
       std::chrono::milliseconds(PROTOBUF_GET_MS_OR_DEFAULT(bootstrap, stats_flush_interval, 5000));
@@ -145,11 +144,12 @@ void MainImpl::initializeStatsSinks(const envoy::config::bootstrap::v3::Bootstra
   }
 }
 
-void MainImpl::initializeGRPCStreamDemuxers() {
+void MainImpl::initializeGrpcStreamDemuxers() {
   ENVOY_LOG(info, "loading gRPC stream demuxer configurations");
 
-  auto& factory = Config::Utility::getAndCheckFactoryByName<Demuxer::GRPCStreamDemuxerFactory>("grpc_stream_demuxer");
-  Demuxer::GRPCStreamDemuxerPtr demuxer = factory.createGPRCStreamDemuxer();
+  auto& factory = Config::Utility::getAndCheckFactoryByName<GrpcStreamDemuxer::GrpcStreamDemuxerFactory>("grpc_stream_demuxer");
+  GrpcStreamDemuxer::GrpcStreamDemuxerPtr demuxer = factory.createGrpcStreamDemuxer();
+  
   // TODO (vmunukutla): It might be too early to start the demuxer here. Check if demuxer should
   // be started later.
   demuxer->start();
