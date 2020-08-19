@@ -4,7 +4,6 @@
 
 #include "extensions/grpc_stream_demuxer/grpc_stream_demuxer.h"
 
-
 namespace Envoy {
 namespace GrpcStreamDemuxer {
 
