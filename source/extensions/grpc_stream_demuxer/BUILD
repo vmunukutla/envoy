@@ -13,6 +13,9 @@ envoy_cc_library(
     name = "grpc_stream_demuxer",
     srcs = ["grpc_stream_demuxer.cc"],
     hdrs = ["grpc_stream_demuxer.h"],
+    deps = [
+        "//source/common/common:minimal_logger_lib",
+    ],
 )
 
 envoy_cc_library(

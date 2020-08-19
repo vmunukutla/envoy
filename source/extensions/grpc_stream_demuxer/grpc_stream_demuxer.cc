@@ -11,9 +11,9 @@ void GrpcStreamDemuxer::start() {
     // to subscription_, waits for messages to be published to subscription_, and
     // sends unary gRPC requests to address:port when messages are published to
     // subscription_.
-    std::cout << "Subscription: " << subscription_ << std::endl;
-    std::cout << "Address: " << address_ << std::endl;
-    std::cout << "Port: " << port_ << std::endl;
+    ENVOY_LOG(info, "Subscription: {}", subscription_);
+    ENVOY_LOG(info, "Address: {}", address_);
+    ENVOY_LOG(info, "Port: {}", port_);
 }
 
 } // namespace GrpcStreamDemuxer

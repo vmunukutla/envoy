@@ -1,5 +1,7 @@
 #pragma once
 
+#include "common/common/logger.h"
+
 #include <iostream>
 #include <memory>
 #include <string>
@@ -7,7 +9,7 @@
 namespace Envoy {
 namespace GrpcStreamDemuxer {
 
-class GrpcStreamDemuxer {
+class GrpcStreamDemuxer : Logger::Loggable<Logger::Id::config> {
 public:
   /**
    * Create a GrpcStreamDemuxer object from the subscription, address, and port, which
