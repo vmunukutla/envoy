@@ -3,6 +3,7 @@
 #include "common/event/real_time_system.h"
 
 #include "test/test_common/global.h"
+#include "test/test_common/only_one_thread.h"
 #include "test/test_common/test_time_system.h"
 
 namespace Envoy {
@@ -11,8 +12,11 @@ namespace Event {
 class TestRealTimeSystem : public TestTimeSystem {
 public:
   // TestTimeSystem
-  void advanceTimeAsyncImpl(const Duration& duration) override;
-  void advanceTimeWaitImpl(const Duration& duration) override;
+  void advanceTimeAsync(const Duration& duration) override;
+  void advanceTimeWait(const Duration& duration) override;
+  Thread::CondVar::WaitStatus waitFor(Thread::MutexBasicLockable& mutex, Thread::CondVar& condvar,
+                                      const Duration& duration) noexcept
+      ABSL_EXCLUSIVE_LOCKS_REQUIRED(mutex) override;
 
   // Event::TimeSystem
   Event::SchedulerPtr createScheduler(Scheduler& base_scheduler,
@@ -26,6 +30,7 @@ public:
 
 private:
   Event::RealTimeSystem real_time_system_;
+  Thread::OnlyOneThread only_one_thread_;
 };
 
 class GlobalTimeSystem : public DelegatingTestTimeSystemBase<TestTimeSystem> {

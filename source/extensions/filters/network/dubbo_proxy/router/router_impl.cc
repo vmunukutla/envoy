@@ -24,15 +24,15 @@ void Router::setDecoderFilterCallbacks(DubboFilters::DecoderFilterCallbacks& cal
 
 FilterStatus Router::onMessageDecoded(MessageMetadataSharedPtr metadata, ContextSharedPtr ctx) {
   ASSERT(metadata->hasInvocationInfo());
-  const auto& invocation = metadata->invocationInfo();
+  const auto& invocation = metadata->invocation_info();
 
   route_ = callbacks_->route();
   if (!route_) {
     ENVOY_STREAM_LOG(debug, "dubbo router: no cluster match for interface '{}'", *callbacks_,
-                     invocation.serviceName());
+                     invocation.service_name());
     callbacks_->sendLocalReply(AppException(ResponseStatus::ServiceNotFound,
                                             fmt::format("dubbo router: no route for interface '{}'",
-                                                        invocation.serviceName())),
+                                                        invocation.service_name())),
                                false);
     return FilterStatus::StopIteration;
   }
@@ -52,7 +52,7 @@ FilterStatus Router::onMessageDecoded(MessageMetadataSharedPtr metadata, Context
 
   cluster_ = cluster->info();
   ENVOY_STREAM_LOG(debug, "dubbo router: cluster '{}' match for interface '{}'", *callbacks_,
-                   route_entry_->clusterName(), invocation.serviceName());
+                   route_entry_->clusterName(), invocation.service_name());
 
   if (cluster_->maintenanceMode()) {
     callbacks_->sendLocalReply(
@@ -75,7 +75,7 @@ FilterStatus Router::onMessageDecoded(MessageMetadataSharedPtr metadata, Context
   }
 
   ENVOY_STREAM_LOG(debug, "dubbo router: decoding request", *callbacks_);
-  upstream_request_buffer_.move(ctx->messageOriginData(), ctx->messageSize());
+  upstream_request_buffer_.move(ctx->message_origin_data(), ctx->message_size());
 
   upstream_request_ = std::make_unique<UpstreamRequest>(
       *this, *conn_pool, metadata, callbacks_->serializationType(), callbacks_->protocolType());
@@ -262,7 +262,7 @@ void Router::UpstreamRequest::onUpstreamHostSelected(Upstream::HostDescriptionCo
 }
 
 void Router::UpstreamRequest::onResetStream(ConnectionPool::PoolFailureReason reason) {
-  if (metadata_->messageType() == MessageType::Oneway) {
+  if (metadata_->message_type() == MessageType::Oneway) {
     // For oneway requests, we should not attempt a response. Reset the downstream to signal
     // an error.
     ENVOY_LOG(debug, "dubbo upstream request: the request is oneway, reset downstream stream");

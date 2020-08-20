@@ -2,7 +2,6 @@
 
 #include <chrono>
 #include <cstdint>
-#include <memory>
 #include <string>
 #include <vector>
 
@@ -73,8 +72,6 @@ private:
   const Protobuf::MethodDescriptor& service_method_;
   const envoy::config::core::v3::ApiVersion transport_api_version_;
 };
-
-using GrpcClientImplPtr = std::unique_ptr<GrpcClientImpl>;
 
 } // namespace ExtAuthz
 } // namespace Common

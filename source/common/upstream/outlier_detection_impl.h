@@ -6,6 +6,7 @@
 #include <list>
 #include <memory>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 #include "envoy/access_log/access_log.h"
@@ -20,8 +21,6 @@
 #include "envoy/stats/stats.h"
 #include "envoy/upstream/outlier_detection.h"
 #include "envoy/upstream/upstream.h"
-
-#include "absl/container/node_hash_map.h"
 
 namespace Envoy {
 namespace Upstream {
@@ -414,7 +413,7 @@ private:
   EjectionsActiveHelper ejections_active_helper_{stats_.ejections_active_};
   Event::TimerPtr interval_timer_;
   std::list<ChangeStateCb> callbacks_;
-  absl::node_hash_map<HostSharedPtr, DetectorHostMonitorImpl*> host_monitors_;
+  std::unordered_map<HostSharedPtr, DetectorHostMonitorImpl*> host_monitors_;
   EventLoggerSharedPtr event_logger_;
 
   // EjectionPair for external and local origin events.

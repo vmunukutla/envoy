@@ -6,10 +6,8 @@
 #include "envoy/network/connection.h"
 #include "envoy/network/transport_socket.h"
 #include "envoy/secret/secret_callbacks.h"
-#include "envoy/ssl/handshaker.h"
 #include "envoy/ssl/private_key/private_key_callbacks.h"
 #include "envoy/ssl/ssl_socket_extended_info.h"
-#include "envoy/ssl/ssl_socket_state.h"
 #include "envoy/stats/scope.h"
 #include "envoy/stats/stats_macros.h"
 
@@ -41,6 +39,7 @@ struct SslSocketFactoryStats {
 };
 
 enum class InitialState { Client, Server };
+enum class SocketState { PreHandshake, HandshakeInProgress, HandshakeComplete, ShutdownSent };
 
 class SslExtendedSocketInfoImpl : public Envoy::Ssl::SslExtendedSocketInfo {
 public:
@@ -52,17 +51,15 @@ private:
       Envoy::Ssl::ClientValidationStatus::NotValidated};
 };
 
-class SslHandshakerImpl : public Envoy::Ssl::ConnectionInfo, public Envoy::Ssl::Handshaker {
+class SslSocketInfo : public Envoy::Ssl::ConnectionInfo {
 public:
-  SslHandshakerImpl(bssl::UniquePtr<SSL> ssl, ContextImplSharedPtr ctx,
-                    Ssl::HandshakeCallbacks* handshake_callbacks);
+  SslSocketInfo(bssl::UniquePtr<SSL> ssl, ContextImplSharedPtr ctx);
 
   // Ssl::ConnectionInfo
   bool peerCertificatePresented() const override;
   bool peerCertificateValidated() const override;
   absl::Span<const std::string> uriSanLocalCertificate() const override;
   const std::string& sha256PeerCertificateDigest() const override;
-  const std::string& sha1PeerCertificateDigest() const override;
   const std::string& serialNumberPeerCertificate() const override;
   const std::string& issuerPeerCertificate() const override;
   const std::string& subjectPeerCertificate() const override;
@@ -79,23 +76,13 @@ public:
   std::string ciphersuiteString() const override;
   const std::string& tlsVersion() const override;
   absl::optional<std::string> x509Extension(absl::string_view extension_name) const override;
-
-  // Ssl::Handshaker
-  Network::PostIoAction doHandshake() override;
-
-  Ssl::SocketState state() { return state_; }
-  void setState(Ssl::SocketState state) { state_ = state; }
   SSL* ssl() const { return ssl_.get(); }
 
   bssl::UniquePtr<SSL> ssl_;
 
 private:
-  Ssl::HandshakeCallbacks* handshake_callbacks_;
-
-  Ssl::SocketState state_;
   mutable std::vector<std::string> cached_uri_san_local_certificate_;
   mutable std::string cached_sha_256_peer_certificate_digest_;
-  mutable std::string cached_sha_1_peer_certificate_digest_;
   mutable std::string cached_serial_number_peer_certificate_;
   mutable std::string cached_issuer_peer_certificate_;
   mutable std::string cached_subject_peer_certificate_;
@@ -110,11 +97,10 @@ private:
   mutable SslExtendedSocketInfoImpl extended_socket_info_;
 };
 
-using SslHandshakerImplSharedPtr = std::shared_ptr<SslHandshakerImpl>;
+using SslSocketInfoConstSharedPtr = std::shared_ptr<const SslSocketInfo>;
 
 class SslSocket : public Network::TransportSocket,
                   public Envoy::Ssl::PrivateKeyConnectionCallbacks,
-                  public Ssl::HandshakeCallbacks,
                   protected Logger::Loggable<Logger::Id::connection> {
 public:
   SslSocket(Envoy::Ssl::ContextSharedPtr ctx, InitialState state,
@@ -124,7 +110,7 @@ public:
   void setTransportSocketCallbacks(Network::TransportSocketCallbacks& callbacks) override;
   std::string protocol() const override;
   absl::string_view failureReason() const override;
-  bool canFlushClose() override { return info_->state() == Ssl::SocketState::HandshakeComplete; }
+  bool canFlushClose() override { return state_ == SocketState::HandshakeComplete; }
   void closeSocket(Network::ConnectionEvent close_type) override;
   Network::IoResult doRead(Buffer::Instance& read_buffer) override;
   Network::IoResult doWrite(Buffer::Instance& write_buffer, bool end_stream) override;
@@ -132,10 +118,6 @@ public:
   Ssl::ConnectionInfoConstSharedPtr ssl() const override;
   // Ssl::PrivateKeyConnectionCallbacks
   void onPrivateKeyMethodComplete() override;
-  // Ssl::HandshakeCallbacks
-  Network::Connection::State connectionState() const override;
-  void onSuccess(SSL* ssl) override;
-  void onFailure() override;
 
   SSL* rawSslForTest() const { return rawSsl(); }
 
@@ -161,8 +143,9 @@ private:
   ContextImplSharedPtr ctx_;
   uint64_t bytes_to_retry_{};
   std::string failure_reason_;
+  SocketState state_;
 
-  SslHandshakerImplSharedPtr info_;
+  SslSocketInfoConstSharedPtr info_;
 };
 
 class ClientSslSocketFactory : public Network::TransportSocketFactory,

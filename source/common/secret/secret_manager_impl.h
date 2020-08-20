@@ -1,5 +1,7 @@
 #pragma once
 
+#include <unordered_map>
+
 #include "envoy/config/core/v3/config_source.pb.h"
 #include "envoy/extensions/transport_sockets/tls/v3/cert.pb.h"
 #include "envoy/secret/secret_manager.h"
@@ -10,8 +12,6 @@
 
 #include "common/common/logger.h"
 #include "common/secret/sds_api.h"
-
-#include "absl/container/node_hash_map.h"
 
 namespace Envoy {
 namespace Secret {
@@ -115,22 +115,22 @@ private:
       ASSERT(num_deleted == 1, "");
     }
 
-    absl::node_hash_map<std::string, std::weak_ptr<SecretType>> dynamic_secret_providers_;
+    std::unordered_map<std::string, std::weak_ptr<SecretType>> dynamic_secret_providers_;
   };
 
   // Manages pairs of secret name and TlsCertificateConfigProviderSharedPtr.
-  absl::node_hash_map<std::string, TlsCertificateConfigProviderSharedPtr>
+  std::unordered_map<std::string, TlsCertificateConfigProviderSharedPtr>
       static_tls_certificate_providers_;
 
   // Manages pairs of secret name and CertificateValidationContextConfigProviderSharedPtr.
-  absl::node_hash_map<std::string, CertificateValidationContextConfigProviderSharedPtr>
+  std::unordered_map<std::string, CertificateValidationContextConfigProviderSharedPtr>
       static_certificate_validation_context_providers_;
 
-  absl::node_hash_map<std::string, TlsSessionTicketKeysConfigProviderSharedPtr>
+  std::unordered_map<std::string, TlsSessionTicketKeysConfigProviderSharedPtr>
       static_session_ticket_keys_providers_;
 
   // Manages pairs of secret name and GenericSecretConfigProviderSharedPtr.
-  absl::node_hash_map<std::string, GenericSecretConfigProviderSharedPtr>
+  std::unordered_map<std::string, GenericSecretConfigProviderSharedPtr>
       static_generic_secret_providers_;
 
   // map hash code of SDS config source and SdsApi object.

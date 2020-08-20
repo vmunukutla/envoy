@@ -87,6 +87,22 @@ namespace Envoy {
     ADD_FAILURE() << "Unexpected exception: " << std::string(e.what());                            \
   }
 
+/*
+  Macro to use instead of EXPECT_DEATH when stderr is produced by a logger.
+  It temporarily installs stderr sink and restores the original logger sink after the test
+  completes and stderr_sink object goes of of scope.
+  EXPECT_DEATH(statement, regex) test passes when statement causes crash and produces error message
+  matching regex. Test fails when statement does not crash or it crashes but message does not
+  match regex. If a message produced during crash is redirected away from strerr, the test fails.
+  By installing StderrSinkDelegate, the macro forces EXPECT_DEATH to send any output produced by
+  statement to stderr.
+*/
+#define EXPECT_DEATH_LOG_TO_STDERR(statement, message)                                             \
+  do {                                                                                             \
+    Envoy::Logger::StderrSinkDelegate stderr_sink(Envoy::Logger::Registry::getSink());             \
+    EXPECT_DEATH(statement, message);                                                              \
+  } while (false)
+
 #define VERIFY_ASSERTION(statement)                                                                \
   do {                                                                                             \
     ::testing::AssertionResult status = statement;                                                 \
@@ -143,18 +159,6 @@ public:
   static bool buffersEqual(const Buffer::Instance& lhs, const Buffer::Instance& rhs);
 
   /**
-   * Compare 2 RawSlice pointers.
-   * @param lhs supplies raw slice 1.
-   * @param rhs supplies raw slice 2.
-   * @param num_slices The number of slices to compare. It is assumed lhs and rhs have the same
-   * number.
-   * @return true if for num_slices, all lhs raw slices are equal to the corresponding rhs raw slice
-   *         in length and a byte by byte data comparison. false otherwise
-   */
-  static bool rawSlicesEqual(const Buffer::RawSlice* lhs, const Buffer::RawSlice* rhs,
-                             size_t num_slices);
-
-  /**
    * Feed a buffer with random characters.
    * @param buffer supplies the buffer to be fed.
    * @param n_char number of characters that should be added to the supplied buffer.
@@ -195,21 +199,14 @@ public:
   static Stats::GaugeSharedPtr findGauge(Stats::Store& store, const std::string& name);
 
   /**
-   * Wait for a counter to == a given value.
+   * Wait till Counter value is equal to the passed ion value.
    * @param store supplies the stats store.
    * @param name supplies the name of the counter to wait for.
    * @param value supplies the value of the counter.
    * @param time_system the time system to use for waiting.
-   * @param timeout the maximum time to wait before timing out, or 0 for no timeout.
-   * @param dispatcher the dispatcher to run non-blocking periodically during the wait.
-   * @return AssertionSuccess() if the counter was == to the value within the timeout, else
-   * AssertionFailure().
    */
-  static AssertionResult
-  waitForCounterEq(Stats::Store& store, const std::string& name, uint64_t value,
-                   Event::TestTimeSystem& time_system,
-                   std::chrono::milliseconds timeout = std::chrono::milliseconds::zero(),
-                   Event::Dispatcher* dispatcher = nullptr);
+  static void waitForCounterEq(Stats::Store& store, const std::string& name, uint64_t value,
+                               Event::TestTimeSystem& time_system);
 
   /**
    * Wait for a counter to >= a given value.
@@ -217,14 +214,9 @@ public:
    * @param name counter name.
    * @param value target value.
    * @param time_system the time system to use for waiting.
-   * @param timeout the maximum time to wait before timing out, or 0 for no timeout.
-   * @return AssertionSuccess() if the counter was >= to the value within the timeout, else
-   * AssertionFailure().
    */
-  static AssertionResult
-  waitForCounterGe(Stats::Store& store, const std::string& name, uint64_t value,
-                   Event::TestTimeSystem& time_system,
-                   std::chrono::milliseconds timeout = std::chrono::milliseconds::zero());
+  static void waitForCounterGe(Stats::Store& store, const std::string& name, uint64_t value,
+                               Event::TestTimeSystem& time_system);
 
   /**
    * Wait for a gauge to >= a given value.
@@ -232,14 +224,9 @@ public:
    * @param name gauge name.
    * @param value target value.
    * @param time_system the time system to use for waiting.
-   * @param timeout the maximum time to wait before timing out, or 0 for no timeout.
-   * @return AssertionSuccess() if the counter gauge >= to the value within the timeout, else
-   * AssertionFailure().
    */
-  static AssertionResult
-  waitForGaugeGe(Stats::Store& store, const std::string& name, uint64_t value,
-                 Event::TestTimeSystem& time_system,
-                 std::chrono::milliseconds timeout = std::chrono::milliseconds::zero());
+  static void waitForGaugeGe(Stats::Store& store, const std::string& name, uint64_t value,
+                             Event::TestTimeSystem& time_system);
 
   /**
    * Wait for a gauge to == a given value.
@@ -247,14 +234,9 @@ public:
    * @param name gauge name.
    * @param value target value.
    * @param time_system the time system to use for waiting.
-   * @param timeout the maximum time to wait before timing out, or 0 for no timeout.
-   * @return AssertionSuccess() if the gauge was == to the value within the timeout, else
-   * AssertionFailure().
    */
-  static AssertionResult
-  waitForGaugeEq(Stats::Store& store, const std::string& name, uint64_t value,
-                 Event::TestTimeSystem& time_system,
-                 std::chrono::milliseconds timeout = std::chrono::milliseconds::zero());
+  static void waitForGaugeEq(Stats::Store& store, const std::string& name, uint64_t value,
+                             Event::TestTimeSystem& time_system);
 
   /**
    * Find a readout in a stats store.
@@ -556,9 +538,8 @@ public:
 
   // Strict variants of Protobuf::MessageUtil
   static void loadFromJson(const std::string& json, Protobuf::Message& message,
-                           bool preserve_original_type = false, bool avoid_boosting = false) {
-    MessageUtil::loadFromJson(json, message, ProtobufMessage::getStrictValidationVisitor(),
-                              !avoid_boosting);
+                           bool preserve_original_type = false) {
+    MessageUtil::loadFromJson(json, message, ProtobufMessage::getStrictValidationVisitor());
     if (!preserve_original_type) {
       Config::VersionConverter::eraseOriginalTypeInformation(message);
     }
@@ -794,8 +775,9 @@ public:
   void wait();
 
 private:
-  absl::Mutex mutex_;
-  bool ready_ ABSL_GUARDED_BY(mutex_){false};
+  Thread::CondVar cv_;
+  Thread::MutexBasicLockable mutex_;
+  bool ready_{false};
 };
 
 namespace Http {
@@ -924,9 +906,11 @@ public:
   const HeaderEntry* get(const LowerCaseString& key) const override {
     return header_map_->get(key);
   }
-  void iterate(HeaderMap::ConstIterateCb cb) const override { header_map_->iterate(cb); }
-  void iterateReverse(HeaderMap::ConstIterateCb cb) const override {
-    header_map_->iterateReverse(cb);
+  void iterate(HeaderMap::ConstIterateCb cb, void* context) const override {
+    header_map_->iterate(cb, context);
+  }
+  void iterateReverse(HeaderMap::ConstIterateCb cb, void* context) const override {
+    header_map_->iterateReverse(cb, context);
   }
   void clear() override {
     header_map_->clear();
@@ -934,11 +918,6 @@ public:
   }
   size_t remove(const LowerCaseString& key) override {
     size_t headers_removed = header_map_->remove(key);
-    header_map_->verifyByteSizeInternalForTest();
-    return headers_removed;
-  }
-  size_t removeIf(const HeaderMap::HeaderMatchPredicate& predicate) override {
-    size_t headers_removed = header_map_->removeIf(predicate);
     header_map_->verifyByteSizeInternalForTest();
     return headers_removed;
   }

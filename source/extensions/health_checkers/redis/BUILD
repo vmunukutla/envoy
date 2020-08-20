@@ -2,14 +2,14 @@ load(
     "//bazel:envoy_build_system.bzl",
     "envoy_cc_extension",
     "envoy_cc_library",
-    "envoy_extension_package",
+    "envoy_package",
 )
 
 licenses(["notice"])  # Apache 2
 
 # Redis custom health checker.
 
-envoy_extension_package()
+envoy_package()
 
 envoy_cc_library(
     name = "redis",
@@ -49,7 +49,6 @@ envoy_cc_library(
     name = "utility",
     hdrs = ["utility.h"],
     deps = [
-        "//source/common/config:utility_lib",
         "//source/common/protobuf",
         "//source/common/protobuf:utility_lib",
         "@envoy_api//envoy/config/core/v3:pkg_cc_proto",

@@ -2,6 +2,7 @@
 #include "envoy/upstream/retry.h"
 
 #include "extensions/retry/host/omit_canary_hosts/omit_canary_hosts.h"
+#include "extensions/retry/host/well_known_names.h"
 
 namespace Envoy {
 namespace Extensions {
@@ -16,7 +17,9 @@ public:
     return std::make_shared<OmitCanaryHostsRetryPredicate>();
   }
 
-  std::string name() const override { return "envoy.retry_host_predicates.omit_canary_hosts"; }
+  std::string name() const override {
+    return RetryHostPredicateValues::get().OmitCanaryHostsPredicate;
+  }
 
   ProtobufTypes::MessagePtr createEmptyConfigProto() override {
     return std::make_unique<

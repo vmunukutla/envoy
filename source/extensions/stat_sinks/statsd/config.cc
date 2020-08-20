@@ -16,9 +16,8 @@ namespace Extensions {
 namespace StatSinks {
 namespace Statsd {
 
-Stats::SinkPtr
-StatsdSinkFactory::createStatsSink(const Protobuf::Message& config,
-                                   Server::Configuration::ServerFactoryContext& server) {
+Stats::SinkPtr StatsdSinkFactory::createStatsSink(const Protobuf::Message& config,
+                                                  Server::Instance& server) {
 
   const auto& statsd_sink =
       MessageUtil::downcastAndValidate<const envoy::config::metrics::v3::StatsdSink&>(
@@ -35,7 +34,7 @@ StatsdSinkFactory::createStatsSink(const Protobuf::Message& config,
     ENVOY_LOG(debug, "statsd TCP cluster: {}", statsd_sink.tcp_cluster_name());
     return std::make_unique<Common::Statsd::TcpStatsdSink>(
         server.localInfo(), statsd_sink.tcp_cluster_name(), server.threadLocal(),
-        server.clusterManager(), server.scope(), statsd_sink.prefix());
+        server.clusterManager(), server.stats(), statsd_sink.prefix());
   default:
     // Verified by schema.
     NOT_REACHED_GCOVR_EXCL_LINE;

@@ -18,9 +18,9 @@ namespace {
 // in the cluster. The load balancing policy must be set
 // to random for proper test operation.
 const std::string& listenerConfig() {
-  CONSTRUCT_ON_FIRST_USE(std::string, fmt::format(R"EOF(
+  CONSTRUCT_ON_FIRST_USE(std::string, R"EOF(
 admin:
-  access_log_path: {}
+  access_log_path: /dev/null
   address:
     socket_address:
       address: 127.0.0.1
@@ -44,8 +44,7 @@ static_resources:
           settings:
             op_timeout: 5s
             enable_redirection: true
-)EOF",
-                                                  TestEnvironment::nullDevicePath()));
+)EOF");
 }
 
 const std::string& clusterConfig() {

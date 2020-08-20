@@ -94,8 +94,6 @@ public:
   bool connectionAllowed() { return connection_allowed_; }
 
 private:
-  friend class RedisProxyFilterTest;
-
   struct PendingRequest : public CommandSplitter::SplitCallbacks {
     PendingRequest(ProxyFilter& parent);
     ~PendingRequest() override;

@@ -13,8 +13,8 @@ public:
   Filesystem::Instance& fileSystem() { return *file_system_; }
 
 private:
-  Thread::ThreadFactoryPtr thread_factory_;
-  Filesystem::InstancePtr file_system_;
+  std::unique_ptr<Thread::ThreadFactory> thread_factory_;
+  std::unique_ptr<Filesystem::Instance> file_system_;
 };
 
 } // namespace Envoy

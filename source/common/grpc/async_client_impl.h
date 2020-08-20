@@ -1,7 +1,5 @@
 #pragma once
 
-#include <memory>
-
 #include "envoy/config/core/v3/base.pb.h"
 #include "envoy/config/core/v3/grpc_service.pb.h"
 #include "envoy/grpc/async_client.h"
@@ -15,9 +13,7 @@ namespace Envoy {
 namespace Grpc {
 
 class AsyncRequestImpl;
-
 class AsyncStreamImpl;
-using AsyncStreamImplPtr = std::unique_ptr<AsyncStreamImpl>;
 
 class AsyncClientImpl final : public RawAsyncClient {
 public:
@@ -37,10 +33,8 @@ public:
 private:
   Upstream::ClusterManager& cm_;
   const std::string remote_cluster_name_;
-  // The host header value in the http transport.
-  const std::string host_name_;
   const Protobuf::RepeatedPtrField<envoy::config::core::v3::HeaderValue> initial_metadata_;
-  std::list<AsyncStreamImplPtr> active_streams_;
+  std::list<std::unique_ptr<AsyncStreamImpl>> active_streams_;
   TimeSource& time_source_;
 
   friend class AsyncRequestImpl;
@@ -50,7 +44,7 @@ private:
 class AsyncStreamImpl : public RawAsyncStream,
                         Http::AsyncClient::StreamCallbacks,
                         public Event::DeferredDeletable,
-                        public LinkedObject<AsyncStreamImpl> {
+                        LinkedObject<AsyncStreamImpl> {
 public:
   AsyncStreamImpl(AsyncClientImpl& parent, absl::string_view service_full_name,
                   absl::string_view method_name, RawAsyncStreamCallbacks& callbacks,

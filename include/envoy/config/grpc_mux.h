@@ -1,7 +1,5 @@
 #pragma once
 
-#include <memory>
-
 #include "envoy/common/exception.h"
 #include "envoy/common/pure.h"
 #include "envoy/config/subscription.h"
@@ -85,6 +83,22 @@ public:
   ABSL_MUST_USE_RESULT virtual ScopedResume pause(const std::vector<std::string> type_urls) PURE;
 
   /**
+   * Retrieves the current pause state as set by pause()/resume().
+   * @param type_url type URL corresponding to xDS API, e.g.
+   * type.googleapis.com/envoy.api.v2.Cluster
+   * @return bool whether the API is paused.
+   */
+  virtual bool paused(const std::string& type_url) const PURE;
+
+  /**
+   * Retrieves the current pause state as set by pause()/resume().
+   * @param type_urls type URLs corresponding to xDS API, e.g.
+   * type.googleapis.com/envoy.api.v2.Cluster
+   * @return bool whether any of the APIs is paused.
+   */
+  virtual bool paused(const std::vector<std::string> type_urls) const PURE;
+
+  /**
    * Start a configuration subscription asynchronously for some API type and resources.
    * @param type_url type URL corresponding to xDS API, e.g.
    * type.googleapis.com/envoy.api.v2.Cluster.
@@ -105,7 +119,6 @@ public:
 using GrpcMuxPtr = std::unique_ptr<GrpcMux>;
 using GrpcMuxSharedPtr = std::shared_ptr<GrpcMux>;
 
-template <class ResponseProto> using ResponseProtoPtr = std::unique_ptr<ResponseProto>;
 /**
  * A grouping of callbacks that a GrpcMux should provide to its GrpcStream.
  */
@@ -128,7 +141,7 @@ public:
   /**
    * For the GrpcStream to pass received protos to the context.
    */
-  virtual void onDiscoveryResponse(ResponseProtoPtr<ResponseProto>&& message,
+  virtual void onDiscoveryResponse(std::unique_ptr<ResponseProto>&& message,
                                    ControlPlaneStats& control_plane_stats) PURE;
 
   /**

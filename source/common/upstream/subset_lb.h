@@ -4,6 +4,7 @@
 #include <map>
 #include <memory>
 #include <string>
+#include <unordered_map>
 
 #include "envoy/config/cluster/v3/cluster.pb.h"
 #include "envoy/runtime/runtime.h"
@@ -15,7 +16,6 @@
 #include "common/protobuf/utility.h"
 #include "common/upstream/upstream_impl.h"
 
-#include "absl/container/node_hash_map.h"
 #include "absl/types/optional.h"
 
 namespace Envoy {
@@ -120,8 +120,8 @@ private:
 
   using LbSubsetEntryPtr = std::shared_ptr<LbSubsetEntry>;
   using SubsetSelectorMapPtr = std::shared_ptr<SubsetSelectorMap>;
-  using ValueSubsetMap = absl::node_hash_map<HashedValue, LbSubsetEntryPtr>;
-  using LbSubsetMap = absl::node_hash_map<std::string, ValueSubsetMap>;
+  using ValueSubsetMap = std::unordered_map<HashedValue, LbSubsetEntryPtr>;
+  using LbSubsetMap = std::unordered_map<std::string, ValueSubsetMap>;
   using SubsetSelectorFallbackParamsRef = std::reference_wrapper<SubsetSelectorFallbackParams>;
 
   class LoadBalancerContextWrapper : public LoadBalancerContext {
@@ -171,7 +171,7 @@ private:
   };
 
   struct SubsetSelectorMap {
-    absl::node_hash_map<std::string, SubsetSelectorMapPtr> subset_keys_;
+    std::unordered_map<std::string, SubsetSelectorMapPtr> subset_keys_;
     SubsetSelectorFallbackParams fallback_params_;
   };
 

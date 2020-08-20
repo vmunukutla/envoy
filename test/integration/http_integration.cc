@@ -40,8 +40,6 @@
 namespace Envoy {
 namespace {
 
-using testing::HasSubstr;
-
 envoy::extensions::filters::network::http_connection_manager::v3::HttpConnectionManager::CodecType
 typeToCodecType(Http::CodecClient::Type type) {
   switch (type) {
@@ -344,14 +342,16 @@ void HttpIntegrationTest::verifyResponse(IntegrationStreamDecoderPtr response,
                                          const std::string& expected_body) {
   EXPECT_TRUE(response->complete());
   EXPECT_EQ(response_code, response->headers().getStatusValue());
-  expected_headers.iterate([response_headers = &response->headers()](
-                               const Http::HeaderEntry& header) -> Http::HeaderMap::Iterate {
-    const Http::HeaderEntry* entry =
-        response_headers->get(Http::LowerCaseString{std::string(header.key().getStringView())});
-    EXPECT_NE(entry, nullptr);
-    EXPECT_EQ(header.value().getStringView(), entry->value().getStringView());
-    return Http::HeaderMap::Iterate::Continue;
-  });
+  expected_headers.iterate(
+      [](const Http::HeaderEntry& header, void* context) -> Http::HeaderMap::Iterate {
+        auto response_headers = static_cast<Http::ResponseHeaderMap*>(context);
+        const Http::HeaderEntry* entry =
+            response_headers->get(Http::LowerCaseString{std::string(header.key().getStringView())});
+        EXPECT_NE(entry, nullptr);
+        EXPECT_EQ(header.value().getStringView(), entry->value().getStringView());
+        return Http::HeaderMap::Iterate::Continue;
+      },
+      const_cast<void*>(static_cast<const void*>(&response->headers())));
 
   EXPECT_EQ(response->body(), expected_body);
 }
@@ -364,7 +364,8 @@ HttpIntegrationTest::waitForNextUpstreamRequest(const std::vector<uint64_t>& ups
   if (!fake_upstream_connection_) {
     AssertionResult result = AssertionFailure();
     int upstream_index = 0;
-    Event::TestTimeSystem::RealTimeBound bound(connection_wait_timeout);
+    Event::TestTimeSystem& time_system = timeSystem();
+    auto end_time = time_system.monotonicTime() + connection_wait_timeout;
     // Loop over the upstreams until the call times out or an upstream request is received.
     while (!result) {
       upstream_index = upstream_index % upstream_indices.size();
@@ -374,7 +375,7 @@ HttpIntegrationTest::waitForNextUpstreamRequest(const std::vector<uint64_t>& ups
       if (result) {
         upstream_with_request = upstream_index;
         break;
-      } else if (!bound.withinBound()) {
+      } else if (time_system.monotonicTime() >= end_time) {
         result = (AssertionFailure() << "Timed out waiting for new connection.");
         break;
       }
@@ -841,9 +842,9 @@ void HttpIntegrationTest::testEnvoyHandling100Continue(bool additional_continue_
 
   response->waitForEndStream();
   ASSERT_TRUE(response->complete());
-  ASSERT(response->continueHeaders() != nullptr);
-  EXPECT_EQ("100", response->continueHeaders()->getStatusValue());
-  EXPECT_EQ(nullptr, response->continueHeaders()->Via());
+  ASSERT(response->continue_headers() != nullptr);
+  EXPECT_EQ("100", response->continue_headers()->getStatusValue());
+  EXPECT_EQ(nullptr, response->continue_headers()->Via());
   EXPECT_EQ("200", response->headers().getStatusValue());
   if (via.empty()) {
     EXPECT_EQ(nullptr, response->headers().Via());
@@ -852,9 +853,8 @@ void HttpIntegrationTest::testEnvoyHandling100Continue(bool additional_continue_
   }
 }
 
-void HttpIntegrationTest::testEnvoyProxying1xx(bool continue_before_upstream_complete,
-                                               bool with_encoder_filter,
-                                               bool with_multiple_1xx_headers) {
+void HttpIntegrationTest::testEnvoyProxying100Continue(bool continue_before_upstream_complete,
+                                                       bool with_encoder_filter) {
   if (with_encoder_filter) {
     // Because 100-continue only affects encoder filters, make sure it plays well with one.
     config_helper_.addFilter("name: envoy.filters.http.cors");
@@ -891,13 +891,6 @@ void HttpIntegrationTest::testEnvoyProxying1xx(bool continue_before_upstream_com
   ASSERT_TRUE(fake_upstream_connection_->waitForNewStream(*dispatcher_, upstream_request_));
 
   if (continue_before_upstream_complete) {
-    if (with_multiple_1xx_headers) {
-      upstream_request_->encode100ContinueHeaders(
-          Http::TestResponseHeaderMapImpl{{":status", "100"}});
-      upstream_request_->encodeHeaders(Http::TestResponseHeaderMapImpl{{":status", "102"}}, false);
-      upstream_request_->encode100ContinueHeaders(
-          Http::TestResponseHeaderMapImpl{{":status", "100"}});
-    }
     // This case tests sending on 100-Continue headers before the client has sent all the
     // request data.
     upstream_request_->encode100ContinueHeaders(
@@ -909,13 +902,6 @@ void HttpIntegrationTest::testEnvoyProxying1xx(bool continue_before_upstream_com
   ASSERT_TRUE(upstream_request_->waitForEndStream(*dispatcher_));
 
   if (!continue_before_upstream_complete) {
-    if (with_multiple_1xx_headers) {
-      upstream_request_->encode100ContinueHeaders(
-          Http::TestResponseHeaderMapImpl{{":status", "100"}});
-      upstream_request_->encodeHeaders(Http::TestResponseHeaderMapImpl{{":status", "102"}}, false);
-      upstream_request_->encode100ContinueHeaders(
-          Http::TestResponseHeaderMapImpl{{":status", "100"}});
-    }
     // This case tests forwarding 100-Continue after the client has sent all data.
     upstream_request_->encode100ContinueHeaders(
         Http::TestResponseHeaderMapImpl{{":status", "100"}});
@@ -925,8 +911,8 @@ void HttpIntegrationTest::testEnvoyProxying1xx(bool continue_before_upstream_com
   upstream_request_->encodeHeaders(default_response_headers_, true);
   response->waitForEndStream();
   EXPECT_TRUE(response->complete());
-  ASSERT(response->continueHeaders() != nullptr);
-  EXPECT_EQ("100", response->continueHeaders()->getStatusValue());
+  ASSERT(response->continue_headers() != nullptr);
+  EXPECT_EQ("100", response->continue_headers()->getStatusValue());
 
   EXPECT_EQ("200", response->headers().getStatusValue());
 }
@@ -1018,7 +1004,6 @@ void HttpIntegrationTest::testLargeRequestUrl(uint32_t url_size, uint32_t max_he
 
 void HttpIntegrationTest::testLargeRequestHeaders(uint32_t size, uint32_t count, uint32_t max_size,
                                                   uint32_t max_count) {
-  useAccessLog("%RESPONSE_CODE_DETAILS%");
   // `size` parameter dictates the size of each header that will be added to the request and `count`
   // parameter is the number of headers to be added. The actual request byte size will exceed `size`
   // due to the keys and other headers. The actual request header count will exceed `count` by four
@@ -1061,9 +1046,6 @@ void HttpIntegrationTest::testLargeRequestHeaders(uint32_t size, uint32_t count,
     auto response = sendRequestAndWaitForResponse(big_headers, 0, default_response_headers_, 0);
     EXPECT_TRUE(response->complete());
     EXPECT_EQ("200", response->headers().getStatusValue());
-  }
-  if (count > max_count) {
-    EXPECT_THAT(waitForAccessLog(access_log_name_), HasSubstr("too_many_headers"));
   }
 }
 
@@ -1267,7 +1249,10 @@ void HttpIntegrationTest::testAdminDrain(Http::CodecClient::Type admin_request_t
   // This does not work for HTTP/3 because the port is not closed until the listener is completely
   // destroyed. TODO(danzh) Match TCP behavior as much as possible.
   if (downstreamProtocol() != Http::CodecClient::Type::HTTP3) {
-    ASSERT_TRUE(waitForPortAvailable(http_port));
+    EXPECT_NO_THROW(Network::TcpListenSocket(
+        Network::Utility::getAddressWithPort(*Network::Test::getCanonicalLoopbackAddress(version_),
+                                             http_port),
+        nullptr, true));
   }
 }
 

@@ -18,8 +18,7 @@ void EnvoyQuicAlarm::SetImpl() {
   // loop. QUICHE alarm is not expected to be scheduled in current event loop. This bit is a bummer
   // in QUICHE, and we are working on the fix. Once QUICHE is fixed of expecting this behavior, we
   // no longer need to round up the duration.
-  // TODO(antoniovicente) Remove the std::max(1, ...) when decommissioning the
-  // envoy.reloadable_features.activate_timers_next_event_loop runtime flag.
+  // TODO(antoniovicente) improve the timer behavior in such case.
   timer_->enableHRTimer(
       std::chrono::microseconds(std::max(static_cast<int64_t>(1), duration.ToMicroseconds())));
 }

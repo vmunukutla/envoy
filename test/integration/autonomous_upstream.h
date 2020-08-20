@@ -24,11 +24,11 @@ public:
                    AutonomousUpstream& upstream, bool allow_incomplete_streams);
   ~AutonomousStream() override;
 
-  void setEndStream(bool set) EXCLUSIVE_LOCKS_REQUIRED(lock_) override;
+  void setEndStream(bool set) override;
 
 private:
   AutonomousUpstream& upstream_;
-  void sendResponse() EXCLUSIVE_LOCKS_REQUIRED(lock_);
+  void sendResponse();
   const bool allow_incomplete_streams_{false};
 };
 

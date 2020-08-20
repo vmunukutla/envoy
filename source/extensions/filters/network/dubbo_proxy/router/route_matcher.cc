@@ -82,7 +82,7 @@ bool ParameterRouteEntryImpl::matchParameter(absl::string_view request_data,
 RouteConstSharedPtr ParameterRouteEntryImpl::matches(const MessageMetadata& metadata,
                                                      uint64_t random_value) const {
   ASSERT(metadata.hasInvocationInfo());
-  const auto invocation = dynamic_cast<const RpcInvocationImpl*>(&metadata.invocationInfo());
+  const auto invocation = dynamic_cast<const RpcInvocationImpl*>(&metadata.invocation_info());
   ASSERT(invocation);
   if (!invocation->hasParameters()) {
     return nullptr;
@@ -141,7 +141,7 @@ MethodRouteEntryImpl::~MethodRouteEntryImpl() = default;
 RouteConstSharedPtr MethodRouteEntryImpl::matches(const MessageMetadata& metadata,
                                                   uint64_t random_value) const {
   ASSERT(metadata.hasInvocationInfo());
-  const auto invocation = dynamic_cast<const RpcInvocationImpl*>(&metadata.invocationInfo());
+  const auto invocation = dynamic_cast<const RpcInvocationImpl*>(&metadata.invocation_info());
   ASSERT(invocation);
 
   if (invocation->hasHeaders() && !RouteEntryImplBase::headersMatch(invocation->headers())) {
@@ -149,14 +149,14 @@ RouteConstSharedPtr MethodRouteEntryImpl::matches(const MessageMetadata& metadat
     return nullptr;
   }
 
-  if (invocation->methodName().empty()) {
+  if (invocation->method_name().empty()) {
     ENVOY_LOG(error, "dubbo route matcher: there is no method name in the metadata");
     return nullptr;
   }
 
-  if (!method_name_.match(invocation->methodName())) {
+  if (!method_name_.match(invocation->method_name())) {
     ENVOY_LOG(debug, "dubbo route matcher: method matching failed, input method '{}'",
-              invocation->methodName());
+              invocation->method_name());
     return nullptr;
   }
 
@@ -182,13 +182,13 @@ SingleRouteMatcherImpl::SingleRouteMatcherImpl(const RouteConfig& config,
 RouteConstSharedPtr SingleRouteMatcherImpl::route(const MessageMetadata& metadata,
                                                   uint64_t random_value) const {
   ASSERT(metadata.hasInvocationInfo());
-  const auto& invocation = metadata.invocationInfo();
+  const auto& invocation = metadata.invocation_info();
 
-  if (service_name_ == invocation.serviceName() &&
+  if (service_name_ == invocation.service_name() &&
       (group_.value().empty() ||
-       (invocation.serviceGroup().has_value() && invocation.serviceGroup().value() == group_)) &&
-      (version_.value().empty() || (invocation.serviceVersion().has_value() &&
-                                    invocation.serviceVersion().value() == version_))) {
+       (invocation.service_group().has_value() && invocation.service_group().value() == group_)) &&
+      (version_.value().empty() || (invocation.service_version().has_value() &&
+                                    invocation.service_version().value() == version_))) {
     for (const auto& route : routes_) {
       RouteConstSharedPtr route_entry = route->matches(metadata, random_value);
       if (nullptr != route_entry) {

@@ -1,7 +1,5 @@
 #pragma once
 
-#include <memory>
-
 #include "envoy/config/grpc_mux.h"
 #include "envoy/config/subscription.h"
 #include "envoy/event/dispatcher.h"
@@ -55,9 +53,6 @@ private:
   Event::TimerPtr init_fetch_timeout_timer_;
   const bool is_aggregated_;
 };
-
-using GrpcSubscriptionImplPtr = std::unique_ptr<GrpcSubscriptionImpl>;
-using GrpcSubscriptionImplSharedPtr = std::shared_ptr<GrpcSubscriptionImpl>;
 
 } // namespace Config
 } // namespace Envoy

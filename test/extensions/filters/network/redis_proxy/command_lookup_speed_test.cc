@@ -12,13 +12,9 @@
 #include "extensions/filters/network/common/redis/supported_commands.h"
 #include "extensions/filters/network/redis_proxy/command_splitter_impl.h"
 
-#include "test/extensions/filters/network/redis_proxy/mocks.h"
-#include "test/mocks/event/mocks.h"
 #include "test/test_common/simulated_time_system.h"
 
 #include "benchmark/benchmark.h"
-
-using testing::NiceMock;
 
 namespace Envoy {
 namespace Extensions {
@@ -58,24 +54,21 @@ public:
     for (const std::string& command : Common::Redis::SupportedCommands::simpleCommands()) {
       Common::Redis::RespValuePtr request{new Common::Redis::RespValue()};
       makeBulkStringArray(*request, {command, "hello"});
-      splitter_.makeRequest(std::move(request), callbacks_, dispatcher_);
+      splitter_.makeRequest(std::move(request), callbacks_);
     }
 
     for (const std::string& command : Common::Redis::SupportedCommands::evalCommands()) {
       Common::Redis::RespValuePtr request{new Common::Redis::RespValue()};
       makeBulkStringArray(*request, {command, "hello"});
-      splitter_.makeRequest(std::move(request), callbacks_, dispatcher_);
+      splitter_.makeRequest(std::move(request), callbacks_);
     }
   }
 
   Router* router_{new NullRouterImpl()};
   Stats::IsolatedStoreImpl store_;
   Event::SimulatedTimeSystem time_system_;
-  NiceMock<MockFaultManager> fault_manager_;
-  NiceMock<Event::MockDispatcher> dispatcher_;
-  CommandSplitter::InstanceImpl splitter_{
-      RouterPtr{router_}, store_, "redis.foo.",
-      time_system_,       false,  std::make_unique<NiceMock<MockFaultManager>>(fault_manager_)};
+  CommandSplitter::InstanceImpl splitter_{RouterPtr{router_}, store_, "redis.foo.", time_system_,
+                                          false};
   NoOpSplitCallbacks callbacks_;
   CommandSplitter::SplitRequestPtr handle_;
 };

@@ -33,8 +33,7 @@ const Http::HeaderMap& lengthZeroHeader() {
 const Response& errorResponse() {
   CONSTRUCT_ON_FIRST_USE(Response,
                          Response{CheckStatus::Error, Http::HeaderVector{}, Http::HeaderVector{},
-                                  Http::HeaderVector{}, EMPTY_STRING, Http::Code::Forbidden,
-                                  ProtobufWkt::Struct{}});
+                                  Http::HeaderVector{}, EMPTY_STRING, Http::Code::Forbidden});
 }
 
 // SuccessResponse used for creating either DENIED or OK authorization responses.
@@ -43,25 +42,28 @@ struct SuccessResponse {
                   const MatcherSharedPtr& append_matchers, Response&& response)
       : headers_(headers), matchers_(matchers), append_matchers_(append_matchers),
         response_(std::make_unique<Response>(response)) {
-    headers_.iterate([this](const Http::HeaderEntry& header) -> Http::HeaderMap::Iterate {
-      // UpstreamHeaderMatcher
-      if (matchers_->matches(header.key().getStringView())) {
-        response_->headers_to_set.emplace_back(
-            Http::LowerCaseString{std::string(header.key().getStringView())},
-            std::string(header.value().getStringView()));
-      }
-      if (append_matchers_->matches(header.key().getStringView())) {
-        // If there is an existing matching key in the current headers, the new entry will be
-        // appended with the same key. For example, given {"key": "value1"} headers, if there is
-        // a matching "key" from the authorization response headers {"key": "value2"}, the
-        // request to upstream server will have two entries for "key": {"key": "value1", "key":
-        // "value2"}.
-        response_->headers_to_add.emplace_back(
-            Http::LowerCaseString{std::string(header.key().getStringView())},
-            std::string(header.value().getStringView()));
-      }
-      return Http::HeaderMap::Iterate::Continue;
-    });
+    headers_.iterate(
+        [](const Http::HeaderEntry& header, void* ctx) -> Http::HeaderMap::Iterate {
+          auto* context = static_cast<SuccessResponse*>(ctx);
+          // UpstreamHeaderMatcher
+          if (context->matchers_->matches(header.key().getStringView())) {
+            context->response_->headers_to_set.emplace_back(
+                Http::LowerCaseString{std::string(header.key().getStringView())},
+                std::string(header.value().getStringView()));
+          }
+          if (context->append_matchers_->matches(header.key().getStringView())) {
+            // If there is an existing matching key in the current headers, the new entry will be
+            // appended with the same key. For example, given {"key": "value1"} headers, if there is
+            // a matching "key" from the authorization response headers {"key": "value2"}, the
+            // request to upstream server will have two entries for "key": {"key": "value1", "key":
+            // "value2"}.
+            context->response_->headers_to_add.emplace_back(
+                Http::LowerCaseString{std::string(header.key().getStringView())},
+                std::string(header.value().getStringView()));
+          }
+          return Http::HeaderMap::Iterate::Continue;
+        },
+        this);
   }
 
   const Http::HeaderMap& headers_;
@@ -315,8 +317,7 @@ ResponsePtr RawHttpClientImpl::toResponse(Http::ResponseMessagePtr message) {
     SuccessResponse ok{message->headers(), config_->upstreamHeaderMatchers(),
                        config_->upstreamHeaderToAppendMatchers(),
                        Response{CheckStatus::OK, Http::HeaderVector{}, Http::HeaderVector{},
-                                Http::HeaderVector{}, EMPTY_STRING, Http::Code::OK,
-                                ProtobufWkt::Struct{}}};
+                                Http::HeaderVector{}, EMPTY_STRING, Http::Code::OK}};
     return std::move(ok.response_);
   }
 
@@ -325,7 +326,7 @@ ResponsePtr RawHttpClientImpl::toResponse(Http::ResponseMessagePtr message) {
                          config_->upstreamHeaderToAppendMatchers(),
                          Response{CheckStatus::Denied, Http::HeaderVector{}, Http::HeaderVector{},
                                   Http::HeaderVector{}, message->bodyAsString(),
-                                  static_cast<Http::Code>(status_code), ProtobufWkt::Struct{}}};
+                                  static_cast<Http::Code>(status_code)}};
   return std::move(denied.response_);
 }
 

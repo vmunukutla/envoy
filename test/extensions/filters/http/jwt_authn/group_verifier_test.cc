@@ -63,7 +63,7 @@ rules:
             - provider_name: "provider_4"
 )";
 
-using StatusMap = absl::node_hash_map<std::string, const Status>;
+using StatusMap = std::unordered_map<std::string, const Status&>;
 
 constexpr auto allowfailed = "_allow_failed_";
 
@@ -109,9 +109,9 @@ public:
     return struct_obj;
   }
 
-  absl::node_hash_map<std::string, AuthenticatorCallback>
+  std::unordered_map<std::string, AuthenticatorCallback>
   createAsyncMockAuthsAndVerifier(const std::vector<std::string>& providers) {
-    absl::node_hash_map<std::string, AuthenticatorCallback> callbacks;
+    std::unordered_map<std::string, AuthenticatorCallback> callbacks;
     for (const auto& provider : providers) {
       auto mock_auth = std::make_unique<MockAuthenticator>();
       EXPECT_CALL(*mock_auth, doVerify(_, _, _, _, _))
@@ -130,7 +130,7 @@ public:
   JwtAuthentication proto_config_;
   VerifierConstPtr verifier_;
   MockVerifierCallbacks mock_cb_;
-  absl::node_hash_map<std::string, std::unique_ptr<MockAuthenticator>> mock_auths_;
+  std::unordered_map<std::string, std::unique_ptr<MockAuthenticator>> mock_auths_;
   NiceMock<MockAuthFactory> mock_factory_;
   ContextSharedPtr context_;
   NiceMock<Tracing::MockSpan> parent_span_;

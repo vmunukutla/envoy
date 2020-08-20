@@ -159,7 +159,7 @@ UdpProxyFilter::ActiveSession::ActiveSession(ClusterInfo& cluster,
       //       is bound until the first packet is sent to the upstream host.
       io_handle_(cluster.filter_.createIoHandle(host)),
       socket_event_(cluster.filter_.read_callbacks_->udpListener().dispatcher().createFileEvent(
-          io_handle_->fd(), [this](uint32_t) { onReadReady(); }, Event::PlatformDefaultTriggerType,
+          io_handle_->fd(), [this](uint32_t) { onReadReady(); }, Event::FileTriggerType::Edge,
           Event::FileReadyType::Read)) {
   ENVOY_LOG(debug, "creating new session: downstream={} local={} upstream={}",
             addresses_.peer_->asStringView(), addresses_.local_->asStringView(),
@@ -179,9 +179,6 @@ UdpProxyFilter::ActiveSession::ActiveSession(ClusterInfo& cluster,
 }
 
 UdpProxyFilter::ActiveSession::~ActiveSession() {
-  ENVOY_LOG(debug, "deleting the session: downstream={} local={} upstream={}",
-            addresses_.peer_->asStringView(), addresses_.local_->asStringView(),
-            host_->address()->asStringView());
   cluster_.filter_.config_->stats().downstream_sess_active_.dec();
   cluster_.cluster_.info()
       ->resourceManager(Upstream::ResourcePriority::Default)
@@ -209,8 +206,6 @@ void UdpProxyFilter::ActiveSession::onReadReady() {
   if (result->getErrorCode() != Api::IoError::IoErrorCode::Again) {
     cluster_.cluster_stats_.sess_rx_errors_.inc();
   }
-  // Flush out buffered data at the end of IO event.
-  cluster_.filter_.read_callbacks_->udpListener().flush();
 }
 
 void UdpProxyFilter::ActiveSession::write(const Buffer::Instance& buffer) {

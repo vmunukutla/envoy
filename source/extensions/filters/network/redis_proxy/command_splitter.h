@@ -3,7 +3,6 @@
 #include <memory>
 
 #include "envoy/common/pure.h"
-#include "envoy/event/dispatcher.h"
 
 #include "extensions/filters/network/common/redis/codec.h"
 
@@ -73,14 +72,12 @@ public:
    * Make a split redis request capable of being retried/redirected.
    * @param request supplies the split request to make (ownership transferred to call).
    * @param callbacks supplies the split request completion callbacks.
-   * @param dispatcher supplies dispatcher used for delay fault timer.
    * @return SplitRequestPtr a handle to the active request or nullptr if the request has already
    *         been satisfied (via onResponse() being called). The splitter ALWAYS calls
    *         onResponse() for a given request.
    */
   virtual SplitRequestPtr makeRequest(Common::Redis::RespValuePtr&& request,
-                                      SplitCallbacks& callbacks,
-                                      Event::Dispatcher& dispatcher) PURE;
+                                      SplitCallbacks& callbacks) PURE;
 };
 
 } // namespace CommandSplitter

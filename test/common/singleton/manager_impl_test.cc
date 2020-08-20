@@ -18,7 +18,8 @@ static void deathTestWorker() {
 }
 
 TEST(SingletonManagerImplDeathTest, NotRegistered) {
-  EXPECT_DEATH(deathTestWorker(), "invalid singleton name 'foo'. Make sure it is registered.");
+  EXPECT_DEATH_LOG_TO_STDERR(deathTestWorker(),
+                             "invalid singleton name 'foo'. Make sure it is registered.");
 }
 
 SINGLETON_MANAGER_REGISTRATION(test);

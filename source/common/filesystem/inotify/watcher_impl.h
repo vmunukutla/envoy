@@ -3,14 +3,13 @@
 #include <cstdint>
 #include <list>
 #include <string>
+#include <unordered_map>
 
 #include "envoy/api/api.h"
 #include "envoy/event/dispatcher.h"
 #include "envoy/filesystem/watcher.h"
 
 #include "common/common/logger.h"
-
-#include "absl/container/node_hash_map.h"
 
 namespace Envoy {
 namespace Filesystem {
@@ -44,7 +43,7 @@ private:
   Api::Api& api_;
   int inotify_fd_;
   Event::FileEventPtr inotify_event_;
-  absl::node_hash_map<int, DirectoryWatch> callback_map_;
+  std::unordered_map<int, DirectoryWatch> callback_map_;
 };
 
 } // namespace Filesystem

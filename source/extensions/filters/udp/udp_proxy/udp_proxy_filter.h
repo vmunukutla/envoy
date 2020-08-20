@@ -222,11 +222,12 @@ private:
 
   virtual Network::IoHandlePtr createIoHandle(const Upstream::HostConstSharedPtr& host) {
     // Virtual so this can be overridden in unit tests.
-    return Network::ioHandleForAddr(Network::Socket::Type::Datagram, host->address());
+    return Network::SocketInterfaceSingleton::get().socket(Network::Socket::Type::Datagram,
+                                                           host->address());
   }
 
   // Upstream::ClusterUpdateCallbacks
-  void onClusterAddOrUpdate(Upstream::ThreadLocalCluster& cluster) final;
+  void onClusterAddOrUpdate(Upstream::ThreadLocalCluster& cluster) override;
   void onClusterRemoval(const std::string& cluster_name) override;
 
   const UdpProxyFilterConfigSharedPtr config_;

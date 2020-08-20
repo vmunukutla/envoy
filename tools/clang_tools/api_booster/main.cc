@@ -27,7 +27,6 @@
 
 #include "tools/type_whisperer/api_type_db.h"
 
-#include "absl/container/node_hash_map.h"
 #include "absl/strings/str_cat.h"
 
 // Enable to see debug log messages.
@@ -244,7 +243,7 @@ private:
                        const clang::SourceManager& source_manager) {
     auto* direct_callee = call_expr.getDirectCallee();
     if (direct_callee != nullptr) {
-      const absl::node_hash_map<std::string, int> ValidateNameToArg = {
+      const std::unordered_map<std::string, int> ValidateNameToArg = {
           {"loadFromYamlAndValidate", 1},
           {"loadFromFileAndValidate", 1},
           {"downcastAndValidate", -1},

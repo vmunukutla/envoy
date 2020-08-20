@@ -19,48 +19,24 @@ WINDOWS_SKIP_TARGETS = [
 # archives, e.g. cares.
 BUILD_ALL_CONTENT = """filegroup(name = "all", srcs = glob(["**"]), visibility = ["//visibility:public"])"""
 
-def _fail_missing_attribute(attr, key):
-    fail("The '%s' attribute must be defined for external dependecy " % attr + key)
-
 # Method for verifying content of the DEPENDENCY_REPOSITORIES defined in bazel/repository_locations.bzl
 # Verification is here so that bazel/repository_locations.bzl can be loaded into other tools written in Python,
 # and as such needs to be free of bazel specific constructs.
-#
-# We also remove the attributes for further consumption in this file, since rules such as http_archive
-# don't recognize them.
 def _repository_locations():
-    locations = {}
-    for key, location in DEPENDENCY_REPOSITORIES.items():
-        mutable_location = dict(location)
-        locations[key] = mutable_location
-
+    locations = dict(DEPENDENCY_REPOSITORIES)
+    for key, location in locations.items():
         if "sha256" not in location or len(location["sha256"]) == 0:
-            _fail_missing_attribute("sha256", key)
-
-        if "project_name" not in location:
-            _fail_missing_attribute("project_name", key)
-        mutable_location.pop("project_name")
-
-        if "project_url" not in location:
-            _fail_missing_attribute("project_url", key)
-        mutable_location.pop("project_url")
-
-        if "version" not in location:
-            _fail_missing_attribute("version", key)
-        mutable_location.pop("version")
+            fail("SHA256 missing for external dependency " + str(location["urls"]))
 
         if "use_category" not in location:
-            _fail_missing_attribute("use_category", key)
-        mutable_location.pop("use_category")
+            fail("The 'use_category' attribute must be defined for external dependecy " + str(location["urls"]))
 
-        if "cpe" in location:
-            mutable_location.pop("cpe")
-        elif not [category for category in USE_CATEGORIES_WITH_CPE_OPTIONAL if category in location["use_category"]]:
-            _fail_missing_attribute("cpe", key)
+        if "cpe" not in location and not [category for category in USE_CATEGORIES_WITH_CPE_OPTIONAL if category in location["use_category"]]:
+            fail("The 'cpe' attribute must be defined for external dependecy " + str(location["urls"]))
 
         for category in location["use_category"]:
             if category not in USE_CATEGORIES:
-                fail("Unknown use_category value '" + category + "' for dependecy " + key)
+                fail("Unknown use_category value '" + category + "' for dependecy " + str(location["urls"]))
 
     return locations
 
@@ -215,12 +191,8 @@ def envoy_dependencies(skip_targets = []):
     _io_opentracing_cpp()
     _net_zlib()
     _upb()
-    _proxy_wasm_cpp_sdk()
-    _proxy_wasm_cpp_host()
-    _emscripten_toolchain()
     _repository_impl("com_googlesource_code_re2")
     _com_google_cel_cpp()
-    _repository_impl("com_github_google_flatbuffers")
     _repository_impl("bazel_toolchains")
     _repository_impl("bazel_compdb")
     _repository_impl("envoy_build_tools")
@@ -264,7 +236,6 @@ def _boringssl_fips():
         sha256 = location["sha256"],
         genrule_cmd_file = "@envoy//bazel/external:boringssl_fips.genrule_cmd",
         build_file = "@envoy//bazel/external:boringssl_fips.BUILD",
-        patches = ["@envoy//bazel/external:boringssl_fips.patch"],
     )
 
 def _com_github_circonus_labs_libcircllhist():
@@ -363,12 +334,15 @@ def _com_github_google_libprotobuf_mutator():
     )
 
 def _com_github_jbeder_yaml_cpp():
-    _repository_impl(
+    location = _get_location("com_github_jbeder_yaml_cpp")
+    http_archive(
         name = "com_github_jbeder_yaml_cpp",
+        build_file_content = BUILD_ALL_CONTENT,
+        **location
     )
     native.bind(
         name = "yaml_cpp",
-        actual = "@com_github_jbeder_yaml_cpp//:yaml-cpp",
+        actual = "@envoy//bazel/foreign_cc:yaml",
     )
 
 def _com_github_libevent_libevent():
@@ -404,24 +378,6 @@ def _net_zlib():
 
 def _com_google_cel_cpp():
     _repository_impl("com_google_cel_cpp")
-    _repository_impl("rules_antlr")
-    location = _get_location("antlr4_runtimes")
-    http_archive(
-        name = "antlr4_runtimes",
-        build_file_content = """
-package(default_visibility = ["//visibility:public"])
-cc_library(
-    name = "cpp",
-    srcs = glob(["runtime/Cpp/runtime/src/**/*.cpp"]),
-    hdrs = glob(["runtime/Cpp/runtime/src/**/*.h"]),
-    includes = ["runtime/Cpp/runtime/src"],
-)
-""",
-        patch_args = ["-p1"],
-        # Patches ASAN violation of initialization fiasco
-        patches = ["@envoy//bazel:antlr.patch"],
-        **location
-    )
 
 def _com_github_nghttp2_nghttp2():
     location = _get_location("com_github_nghttp2_nghttp2")
@@ -813,22 +769,6 @@ def _upb():
         actual = "@upb//:upb",
     )
 
-def _proxy_wasm_cpp_sdk():
-    _repository_impl(name = "proxy_wasm_cpp_sdk")
-
-def _proxy_wasm_cpp_host():
-    _repository_impl(
-        name = "proxy_wasm_cpp_host",
-        build_file = "@envoy//bazel/external:proxy_wasm_cpp_host.BUILD",
-    )
-
-def _emscripten_toolchain():
-    _repository_impl(
-        name = "emscripten_toolchain",
-        build_file_content = BUILD_ALL_CONTENT,
-        patch_cmds = REPOSITORY_LOCATIONS["emscripten_toolchain"]["patch_cmds"],
-    )
-
 def _com_github_google_jwt_verify():
     _repository_impl("com_github_google_jwt_verify")
 
@@ -874,6 +814,7 @@ def _com_github_gperftools_gperftools():
     http_archive(
         name = "com_github_gperftools_gperftools",
         build_file_content = BUILD_ALL_CONTENT,
+        patch_cmds = ["./autogen.sh"],
         **location
     )
 
@@ -924,6 +865,11 @@ def _org_unicode_icuuc():
     _repository_impl(
         name = "org_unicode_icuuc",
         build_file = "@envoy//bazel/external:icuuc.BUILD",
+        # TODO(dio): Consider patching udata when we need to embed some data.
+    )
+    native.bind(
+        name = "icuuc",
+        actual = "@org_unicode_icuuc//:common",
     )
 
 def _foreign_cc_dependencies():

@@ -85,7 +85,7 @@ TEST_P(ConnectionImplDeathTest, BadFd) {
   Event::DispatcherPtr dispatcher(api->allocateDispatcher("test_thread"));
   IoHandlePtr io_handle = std::make_unique<IoSocketHandleImpl>();
   StreamInfo::StreamInfoImpl stream_info(dispatcher->timeSource());
-  EXPECT_DEATH(
+  EXPECT_DEATH_LOG_TO_STDERR(
       ConnectionImpl(*dispatcher,
                      std::make_unique<ConnectionSocketImpl>(std::move(io_handle), nullptr, nullptr),
                      Network::Test::createRawBufferSocket(), stream_info, false),
@@ -106,10 +106,9 @@ protected:
     if (dispatcher_.get() == nullptr) {
       dispatcher_ = api_->allocateDispatcher("test_thread");
     }
-    socket_ = std::make_shared<Network::TcpListenSocket>(
-        Network::Test::getCanonicalLoopbackAddress(GetParam()), nullptr, true);
-    listener_ =
-        dispatcher_->createListener(socket_, listener_callbacks_, true, ENVOY_TCP_BACKLOG_SIZE);
+    socket_ = std::make_shared<Network::TcpListenSocket>(Network::Test::getAnyAddress(GetParam()),
+                                                         nullptr, true);
+    listener_ = dispatcher_->createListener(socket_, listener_callbacks_, true);
     client_connection_ = std::make_unique<Network::TestClientConnectionImpl>(
         *dispatcher_, socket_->localAddress(), source_address_,
         Network::Test::createRawBufferSocket(), socket_options_);
@@ -292,8 +291,8 @@ TEST_P(ConnectionImplTest, ImmediateConnectError) {
   // Using a broadcast/multicast address as the connection destinations address causes an
   // immediate error return from connect().
   Address::InstanceConstSharedPtr broadcast_address;
-  socket_ = std::make_shared<Network::TcpListenSocket>(
-      Network::Test::getCanonicalLoopbackAddress(GetParam()), nullptr, true);
+  socket_ = std::make_shared<Network::TcpListenSocket>(Network::Test::getAnyAddress(GetParam()),
+                                                       nullptr, true);
   if (socket_->localAddress()->ip()->version() == Address::IpVersion::v4) {
     broadcast_address = std::make_shared<Address::Ipv4Instance>("224.0.0.1", 0);
   } else {
@@ -809,18 +808,17 @@ TEST_P(ConnectionImplTest, ReadWatermarks) {
   client_connection_->addReadFilter(client_read_filter);
   connect();
 
-  auto on_filter_data_exit = [&](Buffer::Instance&, bool) -> FilterStatus {
-    dispatcher_->exit();
-    return FilterStatus::StopIteration;
-  };
-
   EXPECT_FALSE(testClientConnection()->readBuffer().highWatermarkTriggered());
   EXPECT_TRUE(client_connection_->readEnabled());
   // Add 4 bytes to the buffer and verify the connection becomes read disabled.
   {
     Buffer::OwnedImpl buffer("data");
     server_connection_->write(buffer, false);
-    EXPECT_CALL(*client_read_filter, onData(_, false)).WillOnce(Invoke(on_filter_data_exit));
+    EXPECT_CALL(*client_read_filter, onData(_, false))
+        .WillOnce(Invoke([&](Buffer::Instance&, bool) -> FilterStatus {
+          dispatcher_->exit();
+          return FilterStatus::StopIteration;
+        }));
     dispatcher_->run(Event::Dispatcher::RunType::Block);
 
     EXPECT_TRUE(testClientConnection()->readBuffer().highWatermarkTriggered());
@@ -843,7 +841,11 @@ TEST_P(ConnectionImplTest, ReadWatermarks) {
   {
     Buffer::OwnedImpl buffer("bye");
     server_connection_->write(buffer, false);
-    EXPECT_CALL(*client_read_filter, onData(_, false)).WillOnce(Invoke(on_filter_data_exit));
+    EXPECT_CALL(*client_read_filter, onData(_, false))
+        .WillOnce(Invoke([&](Buffer::Instance&, bool) -> FilterStatus {
+          dispatcher_->exit();
+          return FilterStatus::StopIteration;
+        }));
     dispatcher_->run(Event::Dispatcher::RunType::Block);
 
     EXPECT_TRUE(testClientConnection()->readBuffer().highWatermarkTriggered());
@@ -875,8 +877,8 @@ TEST_P(ConnectionImplTest, ReadWatermarks) {
           client_connection_->readDisable(false);
           return FilterStatus::StopIteration;
         }))
-        .WillRepeatedly(Invoke(on_filter_data_exit));
-    dispatcher_->run(Event::Dispatcher::RunType::Block);
+        .WillRepeatedly(Return(FilterStatus::StopIteration));
+    dispatcher_->run(Event::Dispatcher::RunType::NonBlock);
   }
 
   // Test the same logic for dispatched_buffered_data from the
@@ -907,8 +909,8 @@ TEST_P(ConnectionImplTest, ReadWatermarks) {
           client_connection_->readDisable(false);
           return FilterStatus::StopIteration;
         }))
-        .WillRepeatedly(Invoke(on_filter_data_exit));
-    dispatcher_->run(Event::Dispatcher::RunType::Block);
+        .WillRepeatedly(Return(FilterStatus::StopIteration));
+    dispatcher_->run(Event::Dispatcher::RunType::NonBlock);
   }
 
   disconnect(true);
@@ -1080,11 +1082,11 @@ TEST_P(ConnectionImplTest, BindTest) {
   std::string address_string = TestUtility::getIpv4Loopback();
   if (GetParam() == Network::Address::IpVersion::v4) {
     source_address_ = Network::Address::InstanceConstSharedPtr{
-        new Network::Address::Ipv4Instance(address_string, 0, nullptr)};
+        new Network::Address::Ipv4Instance(address_string, 0)};
   } else {
     address_string = "::1";
     source_address_ = Network::Address::InstanceConstSharedPtr{
-        new Network::Address::Ipv6Instance(address_string, 0, nullptr)};
+        new Network::Address::Ipv6Instance(address_string, 0)};
   }
   setUpBasicConnection();
   connect();
@@ -1098,11 +1100,11 @@ TEST_P(ConnectionImplTest, BindFromSocketTest) {
   Address::InstanceConstSharedPtr new_source_address;
   if (GetParam() == Network::Address::IpVersion::v4) {
     new_source_address = Network::Address::InstanceConstSharedPtr{
-        new Network::Address::Ipv4Instance(address_string, 0, nullptr)};
+        new Network::Address::Ipv4Instance(address_string, 0)};
   } else {
     address_string = "::1";
     new_source_address = Network::Address::InstanceConstSharedPtr{
-        new Network::Address::Ipv6Instance(address_string, 0, nullptr)};
+        new Network::Address::Ipv6Instance(address_string, 0)};
   }
   auto option = std::make_shared<NiceMock<MockSocketOption>>();
   EXPECT_CALL(*option, setOption(_, Eq(envoy::config::core::v3::SocketOption::STATE_PREBIND)))
@@ -1124,17 +1126,16 @@ TEST_P(ConnectionImplTest, BindFailureTest) {
   if (GetParam() == Network::Address::IpVersion::v6) {
     const std::string address_string = TestUtility::getIpv4Loopback();
     source_address_ = Network::Address::InstanceConstSharedPtr{
-        new Network::Address::Ipv4Instance(address_string, 0, nullptr)};
+        new Network::Address::Ipv4Instance(address_string, 0)};
   } else {
     const std::string address_string = "::1";
     source_address_ = Network::Address::InstanceConstSharedPtr{
-        new Network::Address::Ipv6Instance(address_string, 0, nullptr)};
+        new Network::Address::Ipv6Instance(address_string, 0)};
   }
   dispatcher_ = api_->allocateDispatcher("test_thread");
-  socket_ = std::make_shared<Network::TcpListenSocket>(
-      Network::Test::getCanonicalLoopbackAddress(GetParam()), nullptr, true);
-  listener_ =
-      dispatcher_->createListener(socket_, listener_callbacks_, true, ENVOY_TCP_BACKLOG_SIZE);
+  socket_ = std::make_shared<Network::TcpListenSocket>(Network::Test::getAnyAddress(GetParam()),
+                                                       nullptr, true);
+  listener_ = dispatcher_->createListener(socket_, listener_callbacks_, true);
 
   client_connection_ = dispatcher_->createClientConnection(
       socket_->localAddress(), source_address_, Network::Test::createRawBufferSocket(), nullptr);
@@ -2238,10 +2239,9 @@ public:
   void readBufferLimitTest(uint32_t read_buffer_limit, uint32_t expected_chunk_size) {
     const uint32_t buffer_size = 256 * 1024;
     dispatcher_ = api_->allocateDispatcher("test_thread");
-    socket_ = std::make_shared<Network::TcpListenSocket>(
-        Network::Test::getCanonicalLoopbackAddress(GetParam()), nullptr, true);
-    listener_ =
-        dispatcher_->createListener(socket_, listener_callbacks_, true, ENVOY_TCP_BACKLOG_SIZE);
+    socket_ = std::make_shared<Network::TcpListenSocket>(Network::Test::getAnyAddress(GetParam()),
+                                                         nullptr, true);
+    listener_ = dispatcher_->createListener(socket_, listener_callbacks_, true);
 
     client_connection_ = dispatcher_->createClientConnection(
         socket_->localAddress(), Network::Address::InstanceConstSharedPtr(),

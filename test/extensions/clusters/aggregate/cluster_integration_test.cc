@@ -29,9 +29,9 @@ const int FirstUpstreamIndex = 2;
 const int SecondUpstreamIndex = 3;
 
 const std::string& config() {
-  CONSTRUCT_ON_FIRST_USE(std::string, fmt::format(R"EOF(
+  CONSTRUCT_ON_FIRST_USE(std::string, R"EOF(
 admin:
-  access_log_path: {}
+  access_log_path: /dev/null
   address:
     socket_address:
       address: 127.0.0.1
@@ -47,7 +47,7 @@ dynamic_resources:
 static_resources:
   clusters:
   - name: my_cds_cluster
-    http2_protocol_options: {{}}
+    http2_protocol_options: {}
     load_assignment:
       cluster_name: my_cds_cluster
       endpoints:
@@ -108,8 +108,7 @@ static_resources:
                 match:
                   prefix: "/aggregatecluster"
               domains: "*"
-)EOF",
-                                                  TestEnvironment::nullDevicePath()));
+)EOF");
 }
 
 class AggregateIntegrationTest : public testing::TestWithParam<Network::Address::IpVersion>,

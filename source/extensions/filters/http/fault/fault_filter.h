@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <memory>
 #include <string>
+#include <unordered_set>
 #include <vector>
 
 #include "envoy/extensions/filters/http/fault/v3/fault.pb.h"

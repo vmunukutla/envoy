@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <memory>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 #include "envoy/access_log/access_log.h"
@@ -28,8 +29,6 @@
 #include "common/stream_info/stream_info_impl.h"
 #include "common/tcp_proxy/upstream.h"
 #include "common/upstream/load_balancer_impl.h"
-
-#include "absl/container/node_hash_map.h"
 
 namespace Envoy {
 namespace TcpProxy {
@@ -322,7 +321,7 @@ public:
     bool on_high_watermark_called_{false};
   };
 
-  StreamInfo::StreamInfo& getStreamInfo();
+  virtual StreamInfo::StreamInfo& getStreamInfo();
 
 protected:
   struct DownstreamCallbacks : public Network::ConnectionCallbacks {
@@ -422,7 +421,7 @@ private:
   // This must be a map instead of set because there is no way to move elements
   // out of a set, and these elements get passed to deferredDelete() instead of
   // being deleted in-place. The key and value will always be equal.
-  absl::node_hash_map<Drainer*, DrainerPtr> drainers_;
+  std::unordered_map<Drainer*, DrainerPtr> drainers_;
 };
 
 } // namespace TcpProxy

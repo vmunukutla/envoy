@@ -99,8 +99,7 @@ SubscriptionPtr SubscriptionFactoryImpl::subscriptionFromConfigSource(
         Utility::configSourceInitialFetchTimeout(config), true);
   }
   default:
-    throw EnvoyException(
-        "Missing config source specifier in envoy::config::core::v3::ConfigSource");
+    throw EnvoyException("Missing config source specifier in envoy::api::v2::core::ConfigSource");
   }
   NOT_REACHED_GCOVR_EXCL_LINE;
 }

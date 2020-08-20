@@ -76,10 +76,6 @@ public:
 
   void setSampled(bool sampled) override;
 
-  // TODO(#11622): Implement baggage storage for zipkin spans
-  void setBaggage(absl::string_view, absl::string_view) override;
-  std::string getBaggage(absl::string_view) override;
-
   /**
    * @return a reference to the Zipkin::Span object.
    */

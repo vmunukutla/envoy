@@ -20,7 +20,7 @@ namespace quic {
 // Wraps a Buffer::Instance and deliver its data with minimum number of copies.
 class QuicMemSliceSpanImpl {
 public:
-  QuicMemSliceSpanImpl() = default;
+  QuicMemSliceSpanImpl() : buffer_(nullptr) {}
   /**
    * @param buffer has to outlive the life time of this class.
    */
