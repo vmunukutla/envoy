@@ -3,7 +3,10 @@
 #include "common/config/utility.h"
 
 #include "extensions/grpc_stream_demuxer/config.h"
+<<<<<<< HEAD
 #include "test/mocks/event/mocks.h"
+=======
+>>>>>>> 5ba1765c5 (added tests to test yaml config for GrpcStreamDemuxer creation)
 #include "test/test_common/utility.h"
 
 #include "gmock/gmock.h"
