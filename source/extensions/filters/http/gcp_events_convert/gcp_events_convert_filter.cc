@@ -84,7 +84,11 @@ Http::FilterDataStatus GcpEventsConvertFilter::decodeData(Buffer::Instance&, boo
     return Http::FilterDataStatus::Continue;
   }
 
+<<<<<<< HEAD
   // TODO(#2): step 5 & 6 Use Cloud Event SDK to convert Pubsub Message to HTTP Binding
+=======
+  // TODO(#3): Use Cloud Event SDK to convert Pubsub Message to HTTP Binding
+>>>>>>> dbdf4f849595e3c4a3436e65e59c048bd871ee95
   absl::Status update_status = updateHeader();
   if (!update_status.ok()) {
     ENVOY_LOG(warn, "Gcp Events Convert Filter log: update header {}", update_status.ToString());
