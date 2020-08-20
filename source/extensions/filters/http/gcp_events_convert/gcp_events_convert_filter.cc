@@ -47,7 +47,7 @@ Http::FilterHeadersStatus GcpEventsConvertFilter::decodeHeaders(Http::RequestHea
 }
 
 Http::FilterDataStatus GcpEventsConvertFilter::decodeData(Buffer::Instance&, bool) {
-  // TODO(#1): Implement the logic of decodeData
+  // TODO(#2): Implement the logic of decodeData
   return Http::FilterDataStatus::Continue;
 }
 
