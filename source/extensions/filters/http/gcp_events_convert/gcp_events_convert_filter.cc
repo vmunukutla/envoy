@@ -84,7 +84,7 @@ Http::FilterDataStatus GcpEventsConvertFilter::decodeData(Buffer::Instance&, boo
     return Http::FilterDataStatus::Continue;
   }
 
-  // TODO(#3): Use Cloud Event SDK to convert Pubsub Message to HTTP Binding
+  // TODO(#2): step 5 & 6 Use Cloud Event SDK to convert Pubsub Message to HTTP Binding
   absl::Status update_status = updateHeader();
   if (!update_status.ok()) {
     ENVOY_LOG(warn, "Gcp Events Convert Filter log: update header {}", update_status.ToString());
@@ -120,7 +120,7 @@ absl::Status GcpEventsConvertFilter::updateHeader() {
 
 absl::Status GcpEventsConvertFilter::updateBody() {
   decoder_callbacks_->modifyDecodingBuffer([](Buffer::Instance& buffered) {
-    // TODO(#3): implement detail logic for update Body
+    // TODO(#4): implement detail logic for update Body
     // drain the current buffered instance
     buffered.drain(buffered.length());
     // replace the current buffered instance with the new body
