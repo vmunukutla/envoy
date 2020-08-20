@@ -24,6 +24,7 @@ envoy_cc_library(
     deps = [
         ":grpc_stream_demuxer",
         "//include/envoy/config:typed_config_interface",
+        "@envoy_api//envoy/extensions/grpc_stream_demuxer/v3alpha:pkg_cc_proto",
     ],
 )
 
