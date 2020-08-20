@@ -3,6 +3,7 @@
 #include "common/config/utility.h"
 
 #include "extensions/grpc_stream_demuxer/config.h"
+#include "test/test_common/utility.h"
 
 #include "test/test_common/utility.h"
 
