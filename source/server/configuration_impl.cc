@@ -82,7 +82,11 @@ void MainImpl::initialize(const envoy::config::bootstrap::v3::Bootstrap& bootstr
     server.listenerManager().addOrUpdateListener(listeners[i], "", false);
   }
   
+<<<<<<< HEAD
   initializeGrpcStreamDemuxers(bootstrap, server);
+=======
+  initializeGrpcStreamDemuxers(bootstrap);
+>>>>>>> ee103ccf9 (modify previous implementations to now incorporate grpc_stream_demuxer as passed in the yaml config)
 
   stats_flush_interval_ =
       std::chrono::milliseconds(PROTOBUF_GET_MS_OR_DEFAULT(bootstrap, stats_flush_interval, 5000));
