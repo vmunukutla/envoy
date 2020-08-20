@@ -131,7 +131,6 @@ private:
                             Instance& server);
 
   void initializeGrpcStreamDemuxers(const envoy::config::bootstrap::v3::Bootstrap& bootstrap);
-
   std::unique_ptr<Upstream::ClusterManager> cluster_manager_;
   std::list<Stats::SinkPtr> stats_sinks_;
   std::list<Extensions::GrpcStreamDemuxer::GrpcStreamDemuxerPtr> grpc_stream_demuxers_;

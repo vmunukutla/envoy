@@ -81,7 +81,6 @@ void MainImpl::initialize(const envoy::config::bootstrap::v3::Bootstrap& bootstr
     ENVOY_LOG(debug, "listener #{}:", i);
     server.listenerManager().addOrUpdateListener(listeners[i], "", false);
   }
-
   initializeGrpcStreamDemuxers(bootstrap);
 
   stats_flush_interval_ =
