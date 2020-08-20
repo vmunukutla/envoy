@@ -1,15 +1,13 @@
 #include "extensions/grpc_stream_demuxer/config.h"
 
 namespace Envoy {
-namespace Demuxer {
+namespace GrpcStreamDemuxer {
 
-GRPCStreamDemuxerPtr GRPCStreamDemuxerFactoryImpl::createGPRCStreamDemuxer() {
-    // TODO (vmunukutla): Remove sample parameters and replace with parameters
-    // extracted from GRPCStreamDemuxer proto.
-    return std::make_unique<GRPCStreamDemuxer>("projects/eventflow-interns-sandbox/subscriptions/vikas_sub1", "localhost", 10000);
+GrpcStreamDemuxerPtr GrpcStreamDemuxerFactoryImpl::createGrpcStreamDemuxer(const envoy::extensions::grpc_stream_demuxer::v3alpha::GrpcStreamDemuxer& demuxer_object) {
+    return std::make_unique<GrpcStreamDemuxer>(demuxer_object.subscription(), demuxer_object.address(), demuxer_object.port());
 }
 
-REGISTER_FACTORY(GRPCStreamDemuxerFactoryImpl, GRPCStreamDemuxerFactory);
+REGISTER_FACTORY(GrpcStreamDemuxerFactoryImpl, GrpcStreamDemuxerFactory);
 
-} // namespace Demuxer
+} // namespace GrpcStreamDemuxer
 } // namespace Envoy

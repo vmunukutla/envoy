@@ -4,23 +4,21 @@
 
 #include "extensions/grpc_stream_demuxer/grpc_stream_demuxer_factory.h"
 
-
 namespace Envoy {
-namespace Demuxer {
+namespace GrpcStreamDemuxer {
 
-class GRPCStreamDemuxerFactoryImpl : public GRPCStreamDemuxerFactory {
+class GrpcStreamDemuxerFactoryImpl : public GrpcStreamDemuxerFactory {
 public:
   /**
-   * Create a GRPCStreamDemuxer instance.
-   * TODO (vmunukutla): Pass in GRPCStreamDemuxer proto as parameter after
-   * fixing current build issues that come with adding GRPCStreamDemuxer proto
+   * TODO (vmunukutla): Pass in GrpcStreamDemuxer proto as parameter after
+   * fixing current build issues that come with adding GrpcStreamDemuxer proto
    * to codebase.
    */
-  GRPCStreamDemuxerPtr createGPRCStreamDemuxer() override;
+  GrpcStreamDemuxerPtr createGrpcStreamDemuxer(const envoy::extensions::grpc_stream_demuxer::v3alpha::GrpcStreamDemuxer& demuxer_object) override;
   std::string name() const override { return "grpc_stream_demuxer"; }
 };
 
-DECLARE_FACTORY(GRPCStreamDemuxerFactoryImpl);
+DECLARE_FACTORY(GrpcStreamDemuxerFactoryImpl);
 
-} // namespace Demuxer
+} // namespace GrpcStreamDemuxer
 } // namespace Envoy

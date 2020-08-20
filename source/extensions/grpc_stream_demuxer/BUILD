@@ -11,9 +11,10 @@ envoy_package()
 
 envoy_cc_library(
     name = "grpc_stream_demuxer",
-    srcs = ["demuxer.cc"],
-    hdrs = ["demuxer.h"],
+    srcs = ["grpc_stream_demuxer.cc"],
+    hdrs = ["grpc_stream_demuxer.h"],
     deps = [
+        "//source/common/common:minimal_logger_lib",
         "@com_google_googleapis//google/pubsub/v1:pubsub_cc_grpc",
         "@com_github_grpc_grpc//:grpc++",
     ],
@@ -25,6 +26,7 @@ envoy_cc_library(
     deps = [
         ":grpc_stream_demuxer",
         "//include/envoy/config:typed_config_interface",
+        "@envoy_api//envoy/extensions/grpc_stream_demuxer/v3alpha:pkg_cc_proto",
     ],
 )
 

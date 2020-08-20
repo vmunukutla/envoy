@@ -82,8 +82,8 @@ void MainImpl::initialize(const envoy::config::bootstrap::v3::Bootstrap& bootstr
     ENVOY_LOG(debug, "listener #{}:", i);
     server.listenerManager().addOrUpdateListener(listeners[i], "", false);
   }
-
-  initializeGRPCStreamDemuxers();
+  
+  initializeGrpcStreamDemuxers(bootstrap);
 
   stats_flush_interval_ =
       std::chrono::milliseconds(PROTOBUF_GET_MS_OR_DEFAULT(bootstrap, stats_flush_interval, 5000));
@@ -93,10 +93,25 @@ void MainImpl::initialize(const envoy::config::bootstrap::v3::Bootstrap& bootstr
       std::chrono::milliseconds(PROTOBUF_GET_MS_OR_DEFAULT(watchdog, miss_timeout, 200));
   watchdog_megamiss_timeout_ =
       std::chrono::milliseconds(PROTOBUF_GET_MS_OR_DEFAULT(watchdog, megamiss_timeout, 1000));
-  watchdog_kill_timeout_ =
-      std::chrono::milliseconds(PROTOBUF_GET_MS_OR_DEFAULT(watchdog, kill_timeout, 0));
+  uint64_t kill_timeout = PROTOBUF_GET_MS_OR_DEFAULT(watchdog, kill_timeout, 0);
+  const uint64_t max_kill_timeout_jitter =
+      PROTOBUF_GET_MS_OR_DEFAULT(watchdog, max_kill_timeout_jitter, 0);
+
+  // Adjust kill timeout if we have skew enabled.
+  if (kill_timeout > 0 && max_kill_timeout_jitter > 0) {
+    // Increments the kill timeout with a random value in (0, max_skew].
+    // We shouldn't have overflow issues due to the range of Duration.
+    // This won't be entirely uniform, depending on how large max_skew
+    // is relation to uint64.
+    kill_timeout += (server.random().random() % max_kill_timeout_jitter) + 1;
+  }
+
+  watchdog_kill_timeout_ = std::chrono::milliseconds(kill_timeout);
   watchdog_multikill_timeout_ =
       std::chrono::milliseconds(PROTOBUF_GET_MS_OR_DEFAULT(watchdog, multikill_timeout, 0));
+  watchdog_multikill_threshold_ =
+      PROTOBUF_PERCENT_TO_DOUBLE_OR_DEFAULT(watchdog, multikill_threshold, 0.0);
+  watchdog_actions_ = bootstrap.watchdog().actions();
 
   initializeStatsSinks(bootstrap, server);
 }
@@ -137,18 +152,21 @@ void MainImpl::initializeStatsSinks(const envoy::config::bootstrap::v3::Bootstra
     ProtobufTypes::MessagePtr message = Config::Utility::translateToFactoryConfig(
         sink_object, server.messageValidationContext().staticValidationVisitor(), factory);
 
-    stats_sinks_.emplace_back(factory.createStatsSink(*message, server));
+    stats_sinks_.emplace_back(factory.createStatsSink(*message, server.serverFactoryContext()));
   }
 }
 
-void MainImpl::initializeGRPCStreamDemuxers() {
+void MainImpl::initializeGrpcStreamDemuxers(const envoy::config::bootstrap::v3::Bootstrap& bootstrap) {
   ENVOY_LOG(info, "loading gRPC stream demuxer configurations");
 
-  auto& factory = Config::Utility::getAndCheckFactoryByName<Demuxer::GRPCStreamDemuxerFactory>("grpc_stream_demuxer");
-  Demuxer::GRPCStreamDemuxerPtr demuxer = factory.createGPRCStreamDemuxer();
-  // TODO (vmunukutla): It might be too early to start the demuxer here. Check if demuxer should
-  // be started later.
-  demuxer->start();
+  for (const envoy::extensions::grpc_stream_demuxer::v3alpha::GrpcStreamDemuxer& demuxer_object : bootstrap.grpc_stream_demuxers()) {
+    auto& factory = Config::Utility::getAndCheckFactoryByName<GrpcStreamDemuxer::GrpcStreamDemuxerFactory>("grpc_stream_demuxer");
+    GrpcStreamDemuxer::GrpcStreamDemuxerPtr demuxer = factory.createGrpcStreamDemuxer(demuxer_object);
+
+    // TODO (vmunukutla): It might be too early to start the demuxer here. Check if demuxer should
+    // be started later.
+    demuxer->start();
+  }
 }
 
 InitialImpl::InitialImpl(const envoy::config::bootstrap::v3::Bootstrap& bootstrap) {
