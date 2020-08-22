@@ -5,6 +5,7 @@
 #include "extensions/grpc_stream_demuxer/grpc_stream_demuxer_factory.h"
 
 namespace Envoy {
+namespace Extensions {
 namespace GrpcStreamDemuxer {
 
 class GrpcStreamDemuxerFactoryImpl : public GrpcStreamDemuxerFactory {
@@ -21,4 +22,5 @@ public:
 DECLARE_FACTORY(GrpcStreamDemuxerFactoryImpl);
 
 } // namespace GrpcStreamDemuxer
+} // namespace Extensions
 } // namespace Envoy
