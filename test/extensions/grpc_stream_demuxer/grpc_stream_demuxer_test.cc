@@ -5,8 +5,6 @@
 #include "extensions/grpc_stream_demuxer/config.h"
 #include "test/test_common/utility.h"
 
-#include "test/test_common/utility.h"
-
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 
