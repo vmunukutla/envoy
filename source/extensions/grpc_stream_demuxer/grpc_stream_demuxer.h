@@ -34,4 +34,3 @@ using GrpcStreamDemuxerPtr = std::unique_ptr<GrpcStreamDemuxer>;
 } // namespace GrpcStreamDemuxer
 } // namespace Extensions
 } // namespace Envoy
-
