@@ -41,6 +41,7 @@ namespace Logger {
   FUNCTION(filter)                                                                                 \
   FUNCTION(forward_proxy)                                                                          \
   FUNCTION(grpc)                                                                                   \
+  FUNCTION(hc)                                                                                     \
   FUNCTION(health_checker)                                                                         \
   FUNCTION(http)                                                                                   \
   FUNCTION(http2)                                                                                  \
