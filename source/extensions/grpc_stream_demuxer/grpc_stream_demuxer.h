@@ -11,7 +11,7 @@ namespace GrpcStreamDemuxer {
  * to pull pubsub messages and sends each pubsub message in a grpc request to 
  * the address and port.
  */
-class GrpcStreamDemuxer : Logger::Loggable<Logger::Id::config> {
+class GrpcStreamDemuxer : Logger::Loggable<Logger::Id::grpc_stream_demuxer> {
 public:
   GrpcStreamDemuxer(const std::string& subscription, const std::string& address, int port);
 
