@@ -60,7 +60,7 @@ TEST_P(GcpEventsConvertIntegrationTest, CloudEventNormalRequest) {
   received_message.set_ack_id("random ack id");
   received_message.set_delivery_attempt(3);
   PubsubMessage& pubsub_message = *received_message.mutable_message();
-  auto attributes = *pubsub_message.mutable_attributes();
+  google::protobuf::Map<std::string, std::string>& attributes = *pubsub_message.mutable_attributes();
   attributes["ce-specversion"] = "1.0";
   attributes["ce-type"] = "com.example.some_event";
   attributes["ce-time"] = "2020-03-10T03:56:24Z";
@@ -120,7 +120,7 @@ TEST_P(GcpEventsConvertIntegrationTest, CloudEventPartialMissingRequest) {
   received_message.set_ack_id("random ack id");
   received_message.set_delivery_attempt(3);
   PubsubMessage& pubsub_message = *received_message.mutable_message();
-  auto attributes = *pubsub_message.mutable_attributes();
+  google::protobuf::Map<std::string, std::string>& attributes = *pubsub_message.mutable_attributes();
   attributes["ce-specversion"] = "1.0";
   attributes["ce-type"] = "com.example.some_event";
   attributes["ce-time"] = "2020-03-10T03:56:24Z";
