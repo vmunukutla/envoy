@@ -2,20 +2,16 @@
 
 #include "common/common/logger.h"
 
-#include <iostream>
-#include <memory>
-#include <string>
-
 namespace Envoy {
+namespace Extensions {
 namespace GrpcStreamDemuxer {
 
 /**
-   * Creates a GrpcStreamDemuxer object from the subscription, address, and port passed in 
-   * by the user, which are configured by the user in their yaml config. GrpcStreamDemuxer 
-   * initiates a streaming pull connection to the subscription to pull pubsub messages and 
-   * sends each pubsub message in a grpc request to the address and port.
-   */
-class GrpcStreamDemuxer : Logger::Loggable<Logger::Id::config> {
+ * GrpcStreamDemuxer initiates a streaming pull connection to the subscription 
+ * to pull pubsub messages and sends each pubsub message in a grpc request to 
+ * the address and port.
+ */
+class GrpcStreamDemuxer : Logger::Loggable<Logger::Id::grpc_stream_demuxer> {
 public:
   GrpcStreamDemuxer(const std::string& subscription, const std::string& address, int port);
 
@@ -36,5 +32,5 @@ private:
 using GrpcStreamDemuxerPtr = std::unique_ptr<GrpcStreamDemuxer>;
 
 } // namespace GrpcStreamDemuxer
+} // namespace Extensions
 } // namespace Envoy
-

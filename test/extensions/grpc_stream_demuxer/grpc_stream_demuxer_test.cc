@@ -4,6 +4,7 @@
 #include "extensions/grpc_stream_demuxer/config.h"
 #include "test/test_common/utility.h"
 
+#include "gmock/gmock.h"
 #include "gtest/gtest.h"
 
 namespace Envoy {
@@ -46,7 +47,7 @@ TEST(GrpcStreamDemuxerTest, CreateGrpcStreamDemuxer) {
   TestUtility::loadFromYaml(yaml, demuxer_object);
   auto& factory = Config::Utility::getAndCheckFactoryByName<Envoy::GrpcStreamDemuxer::GrpcStreamDemuxerFactory>("grpc_stream_demuxer");
   Envoy::GrpcStreamDemuxer::GrpcStreamDemuxerPtr demuxer = factory.createGrpcStreamDemuxer(demuxer_object);
-  EXPECT_NE(nullptr, demuxer);
+  EXPECT_THAT(demuxer, testing::NotNull());
 }
 
 // Basic test to make sure GrpcStreamDemuxer initialization from an invalid factory name fails.
@@ -55,6 +56,6 @@ TEST(GrpcStreamDemuxerTest, InvalidGrpcStreamDemuxerFactory) {
     EnvoyException);
 }
 
-} // namespace GrpsStreamDemuxer
-} // namespace Extensions
 } // namespace GrpcStreamDemuxer
+} // namespace Extensions
+} // namespace Envoy

@@ -10,6 +10,7 @@ using google::pubsub::v1::StreamingPullRequest;
 using google::pubsub::v1::StreamingPullResponse;
 
 namespace Envoy {
+namespace Extensions {
 namespace GrpcStreamDemuxer {
 
 GrpcStreamDemuxer::GrpcStreamDemuxer(const std::string& subscription, const std::string& address, int port) 
@@ -49,4 +50,5 @@ void GrpcStreamDemuxer::start() {
 }
 
 } // namespace GrpcStreamDemuxer
+} // namespace Extensions
 } // namespace Envoy
