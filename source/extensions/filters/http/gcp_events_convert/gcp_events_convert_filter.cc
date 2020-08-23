@@ -63,13 +63,14 @@ Http::FilterDataStatus GcpEventsConvertFilter::decodeData(Buffer::Instance&, boo
     return Http::FilterDataStatus::StopIterationAndBuffer;
 
   if (decoder_callbacks_ == nullptr) {
+    ENVOY_LOG(warn, "Gcp Events Convert Filter log: decoder callbacks pointer = nullptr");
     return Http::FilterDataStatus::Continue;
   }
 
   const Buffer::Instance* buffered = decoder_callbacks_->decodingBuffer();
 
   if (buffered == nullptr) {
-    // nothing got buffered, Continue
+    ENVOY_LOG(warn, "Gcp Events Convert Filter log: nothing has been buffered");
     return Http::FilterDataStatus::Continue;
   }
 
@@ -84,11 +85,7 @@ Http::FilterDataStatus GcpEventsConvertFilter::decodeData(Buffer::Instance&, boo
     return Http::FilterDataStatus::Continue;
   }
 
-<<<<<<< HEAD
   // TODO(#2): step 5 & 6 Use Cloud Event SDK to convert Pubsub Message to HTTP Binding
-=======
-  // TODO(#3): Use Cloud Event SDK to convert Pubsub Message to HTTP Binding
->>>>>>> dbdf4f849595e3c4a3436e65e59c048bd871ee95
   absl::Status update_status = updateHeader();
   if (!update_status.ok()) {
     ENVOY_LOG(warn, "Gcp Events Convert Filter log: update header {}", update_status.ToString());
