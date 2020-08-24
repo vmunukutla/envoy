@@ -195,8 +195,10 @@ TEST_P(GcpEventsConvertIntegrationTest, RandomRequest) {
  * Unrelated cases, pass through
  */
 TEST_P(GcpEventsConvertIntegrationTest, HeaderOnlyRequest) {
-  Http::TestRequestHeaderMapImpl headers{
-      {":method", "GET"}, {":path", "/"}, {":authority", "host"}};
+  Http::TestRequestHeaderMapImpl headers{{":method", "GET"},
+                                         {":scheme", "http"},
+                                         {":path", "/shelf"},
+                                         {":authority", "host"}};
 
   IntegrationCodecClientPtr codec_client;
   FakeHttpConnectionPtr fake_upstream_connection;
