@@ -62,21 +62,25 @@ TEST(GcpEventsConvertFilterUnitTest, DecodeHeaderWithRandomContent) {
 TEST(GcpEventsConvertFilterUnitTest, DecodeDataWithCloudEvent) {
   envoy::extensions::filters::http::gcp_events_convert::v3::GcpEventsConvert proto_config;
   proto_config.set_content_type("application/grpc+cloudevent+json");
-  GcpEventsConvertFilter filter(std::make_shared<GcpEventsConvertFilterConfig>(proto_config), /*has_cloud_event=*/true);
+  GcpEventsConvertFilter filter(std::make_shared<GcpEventsConvertFilterConfig>(proto_config),
+                                /*has_cloud_event=*/true);
   Http::MockStreamDecoderFilterCallbacks callbacks;
   filter.setDecoderFilterCallbacks(callbacks);
 
   // buffer simulate the buffered data and will be set manually
   Buffer::OwnedImpl buffer;
   EXPECT_CALL(callbacks, decodingBuffer()).Times(1).WillOnce(testing::Return(&buffer));
-  EXPECT_CALL(callbacks, modifyDecodingBuffer(_)).Times(1).WillOnce(testing::Return());
+  EXPECT_CALL(callbacks, modifyDecodingBuffer)
+      .Times(1)
+      .WillOnce([&buffer](std::function<void(Buffer::Instance&)> lambda) { lambda(buffer); });
 
   // create a received message proto object
   ReceivedMessage received_message;
   received_message.set_ack_id("random ack id");
   received_message.set_delivery_attempt(3);
   PubsubMessage& pubsub_message = *received_message.mutable_message();
-  google::protobuf::Map<std::string, std::string>& attributes = *pubsub_message.mutable_attributes();
+  google::protobuf::Map<std::string, std::string>& attributes =
+      *pubsub_message.mutable_attributes();
   attributes["ce-specversion"] = "1.0";
   attributes["ce-type"] = "com.example.some_event";
   attributes["ce-time"] = "2020-03-10T03:56:24Z";
@@ -98,12 +102,15 @@ TEST(GcpEventsConvertFilterUnitTest, DecodeDataWithCloudEvent) {
 
   Buffer::OwnedImpl data2;
   EXPECT_EQ(Http::FilterDataStatus::Continue, filter.decodeData(data2, true));
+
+  ASSERT_EQ(buffer.toString(), "This is a example body");
 }
 
 TEST(GcpEventsConvertFilterUnitTest, DecodeDataWithRandomBody) {
   envoy::extensions::filters::http::gcp_events_convert::v3::GcpEventsConvert proto_config;
   proto_config.set_content_type("application/grpc+cloudevent+json");
-  GcpEventsConvertFilter filter(std::make_shared<GcpEventsConvertFilterConfig>(proto_config), /*has_cloud_event=*/false);
+  GcpEventsConvertFilter filter(std::make_shared<GcpEventsConvertFilterConfig>(proto_config),
+                                /*has_cloud_event=*/false);
   Http::MockStreamDecoderFilterCallbacks callbacks;
   filter.setDecoderFilterCallbacks(callbacks);
 
