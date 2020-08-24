@@ -10,8 +10,6 @@ licenses(["notice"])  # Apache 2
 
 envoy_extension_package()
 
-envoy_package()
-
 envoy_cc_library(
     name = "gcp_events_convert_filter_lib",
     srcs = ["gcp_events_convert_filter.cc"],
