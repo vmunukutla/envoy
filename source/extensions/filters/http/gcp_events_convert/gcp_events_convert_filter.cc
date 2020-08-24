@@ -129,9 +129,9 @@ absl::Status GcpEventsConvertFilter::updateHeader(const HttpRequest& http_req) {
     std::string str = header.value().to_string();
     absl::string_view header_val(str);
     if (header_key == Http::LowerCaseString("content-type")) {
-      request_headers_->setContentType(header_val);
+      request_headers_->setContentType(header.value().to_string());
     } else {
-      request_headers_->addCopy(header_key, header_val);
+      request_headers_->addCopy(header_key, header.value().to_string());
     }
   }
   return absl::OkStatus();
