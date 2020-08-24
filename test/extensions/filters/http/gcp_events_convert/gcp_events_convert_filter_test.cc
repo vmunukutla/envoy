@@ -84,9 +84,6 @@ TEST(GcpEventsConvertFilterUnitTest, DecodeDataWithCloudEvent) {
   attributes["ce-source"] = "/mycontext/subcontext";
   attributes["ce-datacontenttype"] = "application/text; charset=utf-8";
   pubsub_message.set_data("cloud event data payload");
-  pubsub_message.set_message_id("136969346945");
-  pubsub_message.mutable_publish_time()->ParseFromString("2014-10-02T15:01:23Z");
-  pubsub_message.set_ordering_key("");
 
   // create a json string of received message
   std::string json_string;
