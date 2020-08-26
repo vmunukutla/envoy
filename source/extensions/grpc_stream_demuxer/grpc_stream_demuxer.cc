@@ -1,14 +1,5 @@
 #include "extensions/grpc_stream_demuxer/grpc_stream_demuxer.h"
 
-#include "google/pubsub/v1/pubsub.grpc.pb.h"
-#include "grpc++/grpc++.h"
-
-using grpc::ClientContext;
-using grpc::ClientReaderWriter;
-using google::pubsub::v1::Subscriber;
-using google::pubsub::v1::StreamingPullRequest;
-using google::pubsub::v1::StreamingPullResponse;
-
 namespace Envoy {
 namespace Extensions {
 namespace GrpcStreamDemuxer {
@@ -25,6 +16,7 @@ void GrpcStreamDemuxer::start() {
     grpc::CreateChannel("pubsub.googleapis.com", creds));      
 
   // Open up the stream.
+  // CompletionQueue cq;
   ClientContext ctx;
   unsigned int client_connection_timeout = 2;
   std::chrono::system_clock::time_point deadline = 
@@ -41,7 +33,10 @@ void GrpcStreamDemuxer::start() {
   stream->Write(request);
   // Receive messages.
   StreamingPullResponse response;
-  while (stream->Read(&response)) {
+  ENVOY_LOG(debug, "one");
+  // stream_->Read(&response);
+  ENVOY_LOG(debug, "two");
+  // while (true) {
     // Ack messages.
     StreamingPullRequest ack_request;
     for (const auto &message : response.received_messages()) {
