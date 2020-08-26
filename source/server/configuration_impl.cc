@@ -83,7 +83,7 @@ void MainImpl::initialize(const envoy::config::bootstrap::v3::Bootstrap& bootstr
     server.listenerManager().addOrUpdateListener(listeners[i], "", false);
   }
   
-  initializeGrpcStreamDemuxers(bootstrap);
+  initializeGrpcStreamDemuxers(bootstrap, server);
 
   stats_flush_interval_ =
       std::chrono::milliseconds(PROTOBUF_GET_MS_OR_DEFAULT(bootstrap, stats_flush_interval, 5000));
@@ -156,16 +156,17 @@ void MainImpl::initializeStatsSinks(const envoy::config::bootstrap::v3::Bootstra
   }
 }
 
-void MainImpl::initializeGrpcStreamDemuxers(const envoy::config::bootstrap::v3::Bootstrap& bootstrap) {
+void MainImpl::initializeGrpcStreamDemuxers(const envoy::config::bootstrap::v3::Bootstrap& bootstrap,
+				   Instance& server) {
   ENVOY_LOG(info, "loading gRPC stream demuxer configurations");
 
   for (const envoy::extensions::grpc_stream_demuxer::v3alpha::GrpcStreamDemuxer& demuxer_object : bootstrap.grpc_stream_demuxers()) {
     auto& factory = Config::Utility::getAndCheckFactoryByName<Extensions::GrpcStreamDemuxer::GrpcStreamDemuxerFactory>("grpc_stream_demuxer");
-    Extensions::GrpcStreamDemuxer::GrpcStreamDemuxerPtr demuxer = factory.createGrpcStreamDemuxer(demuxer_object);
+    Extensions::GrpcStreamDemuxer::GrpcStreamDemuxerPtr demuxer = factory.createGrpcStreamDemuxer(demuxer_object, server.dispatcher());
 
     // TODO (vmunukutla): It might be too early to start the demuxer here. Check if demuxer should
     // be started later.
-    demuxer->start();
+    // demuxer->start();
   }
 }
 
