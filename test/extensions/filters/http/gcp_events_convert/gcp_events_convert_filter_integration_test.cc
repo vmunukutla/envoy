@@ -14,11 +14,15 @@ namespace {
 using google::pubsub::v1::PubsubMessage;
 using google::pubsub::v1::ReceivedMessage;
 
+/**
+ * Tests a downstream client sendig HTTP requests that containing Cloud Event in PubsubMessage binding
+ * that are converted to Cloud Event in HTTP binding. Both Binding is binary format. 
+ */
 class GcpEventsConvertIntegrationTest : public HttpIntegrationTest,
                                         public testing::TestWithParam<Network::Address::IpVersion> {
 public:
   GcpEventsConvertIntegrationTest()
-      : HttpIntegrationTest(Http::CodecClient::Type::HTTP1, GetParam(), realTime()) {}
+      : HttpIntegrationTest(Http::CodecClient::Type::HTTP1, GetParam()) {}
   /**
    * Initializer for an individual integration test.
    */
@@ -41,8 +45,7 @@ INSTANTIATE_TEST_SUITE_P(IpVersions, GcpEventsConvertIntegrationTest,
  */
 TEST_P(GcpEventsConvertIntegrationTest, CloudEventNormalRequest) {
   Http::TestRequestHeaderMapImpl headers{{":method", "POST"},
-                                         {":scheme", "http"},
-                                         {":path", "/shelf"},
+                                         {":path", "/"},
                                          {":authority", "host"},
                                          {"content-type", "application/grpc+cloudevent+json"}};
 
@@ -99,8 +102,7 @@ TEST_P(GcpEventsConvertIntegrationTest, CloudEventNormalRequest) {
  */
 TEST_P(GcpEventsConvertIntegrationTest, CloudEventPartialMissingRequest) {
   Http::TestRequestHeaderMapImpl headers{{":method", "POST"},
-                                         {":scheme", "http"},
-                                         {":path", "/shelf"},
+                                         {":path", "/"},
                                          {":authority", "host"},
                                          {"content-type", "application/grpc+cloudevent+json"}};
 
@@ -161,8 +163,7 @@ TEST_P(GcpEventsConvertIntegrationTest, CloudEventPartialMissingRequest) {
  */
 TEST_P(GcpEventsConvertIntegrationTest, RandomRequest) {
   Http::TestRequestHeaderMapImpl headers{{":method", "POST"},
-                                         {":scheme", "http"},
-                                         {":path", "/shelf"},
+                                         {":path", "/"},
                                          {":authority", "host"},
                                          {"content-type", "application/text"}};
 
@@ -197,8 +198,9 @@ TEST_P(GcpEventsConvertIntegrationTest, RandomRequest) {
  * Unrelated cases, pass through
  */
 TEST_P(GcpEventsConvertIntegrationTest, HeaderOnlyRequest) {
-  Http::TestRequestHeaderMapImpl headers{
-      {":method", "GET"}, {":scheme", "http"}, {":path", "/shelf"}, {":authority", "host"}};
+  Http::TestRequestHeaderMapImpl headers{{":method", "GET"},
+                                         {":path", "/"},
+                                         {":authority", "host"}};
 
   IntegrationCodecClientPtr codec_client;
   FakeHttpConnectionPtr fake_upstream_connection;
@@ -206,9 +208,12 @@ TEST_P(GcpEventsConvertIntegrationTest, HeaderOnlyRequest) {
 
   codec_client = makeHttpConnection(lookupPort("http"));
   auto response = codec_client->makeHeaderOnlyRequest(headers);
+
   ASSERT_TRUE(fake_upstreams_[0]->waitForHttpConnection(*dispatcher_, fake_upstream_connection));
   ASSERT_TRUE(fake_upstream_connection->waitForNewStream(*dispatcher_, request_stream));
   ASSERT_TRUE(request_stream->waitForEndStream(*dispatcher_));
+
+  ASSERT_EQ(request_stream->body().toString(), "");
   response->waitForEndStream();
   codec_client->close();
 }
