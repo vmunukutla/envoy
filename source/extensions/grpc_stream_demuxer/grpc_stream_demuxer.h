@@ -39,7 +39,7 @@ private:
   std::string address_;
   int port_;
   Event::TimerPtr interval_timer_;
-  ClientReaderWriter<StreamingPullRequest, StreamingPullResponse>* stream_;
+  // ClientReaderWriter<StreamingPullRequest, StreamingPullResponse>* stream_;
 };
 
 using GrpcStreamDemuxerPtr = std::unique_ptr<GrpcStreamDemuxer>;
