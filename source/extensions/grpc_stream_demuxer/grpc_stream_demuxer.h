@@ -32,8 +32,6 @@ public:
    */
   void start();
 
-  void startTimer();
-
 private:
   // Subscription name to connect to.
   std::string subscription_;
@@ -41,7 +39,7 @@ private:
   std::string address_;
   int port_;
   Event::TimerPtr interval_timer_;
-  // std::unique_ptr<ClientReaderWriter<StreamingPullRequest, StreamingPullResponse>> stream_;
+  ClientReaderWriter<StreamingPullRequest, StreamingPullResponse>* stream_;
 };
 
 using GrpcStreamDemuxerPtr = std::unique_ptr<GrpcStreamDemuxer>;

@@ -21,6 +21,7 @@
 #include "common/json/json_loader.h"
 #include "common/network/resolver_impl.h"
 #include "common/network/utility.h"
+#include "extensions/grpc_stream_demuxer/config.h"
 
 #include "extensions/grpc_stream_demuxer/config.h"
 

@@ -161,11 +161,7 @@ void MainImpl::initializeGrpcStreamDemuxers(const envoy::config::bootstrap::v3::
 
   for (const envoy::extensions::grpc_stream_demuxer::v3alpha::GrpcStreamDemuxer& demuxer_object : bootstrap.grpc_stream_demuxers()) {
     auto& factory = Config::Utility::getAndCheckFactoryByName<Extensions::GrpcStreamDemuxer::GrpcStreamDemuxerFactory>("grpc_stream_demuxer");
-    Extensions::GrpcStreamDemuxer::GrpcStreamDemuxerPtr demuxer = factory.createGrpcStreamDemuxer(demuxer_object, server.dispatcher());
-
-    // TODO (vmunukutla): It might be too early to start the demuxer here. Check if demuxer should
-    // be started later.
-    // demuxer->start();
+    grpc_stream_demuxers_.emplace_back(factory.createGrpcStreamDemuxer(demuxer_object, server.dispatcher()));
   }
 }
 
