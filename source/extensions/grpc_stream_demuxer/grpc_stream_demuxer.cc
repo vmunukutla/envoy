@@ -17,30 +17,31 @@ GrpcStreamDemuxer::GrpcStreamDemuxer(const std::string& subscription, const std:
   std::chrono::system_clock::time_point deadline = 
 	  std::chrono::system_clock::now() + std::chrono::seconds(client_connection_timeout);
   ctx.set_deadline(deadline);
-  // stream_ = std::move(stub->StreamingPull(&ctx));
+  std::unique_ptr<ClientReaderWriter
+    <StreamingPullRequest, StreamingPullResponse>> 
+      stream(stub->StreamingPull(&ctx));
+  stream_ = stream.get();
+  ENVOY_LOG(info, "HAHAHA");
+  // std::cout << "stream ptr: " << *stream_ << std::endl;
   
   // Send initial message.
-  // StreamingPullRequest request;
-  // request.set_subscription(subscription_);
-  // request.set_stream_ack_deadline_seconds(10);
-  // stream_->Write(request);
-  interval_timer_ = dispatcher.createTimer([this]() -> void { startTimer(); });
-  interval_timer_->enableTimer(std::chrono::milliseconds(5000));
-}
-
-void GrpcStreamDemuxer::startTimer() {
-  ENVOY_LOG(debug, "Firing Timer!");
+  StreamingPullRequest request;
+  request.set_subscription(subscription_);
+  request.set_stream_ack_deadline_seconds(10);
+  stream_->Write(request);
+  interval_timer_ = dispatcher.createTimer([this]() -> void { start(); });
   interval_timer_->enableTimer(std::chrono::milliseconds(5000));
 }
 
 void GrpcStreamDemuxer::start() {
   ENVOY_LOG(debug, "Firing timer!");
+  // std::cout << "stream ptr: " << *stream_ << std::endl;
   // Receive messages.
   StreamingPullResponse response;
   ENVOY_LOG(debug, "one");
   // stream_->Read(&response);
   ENVOY_LOG(debug, "two");
-  // while (true) {
+  while (stream_->Read(&response)) {
     // Ack messages.
     StreamingPullRequest ack_request;
     for (const auto &message : response.received_messages()) {
@@ -48,10 +49,11 @@ void GrpcStreamDemuxer::start() {
       ENVOY_LOG(info, "Pubsub message data: {}", message.message().data());
       ack_request.add_ack_ids(message.ack_id());
     }
-    // stream_->Write(ack_request);
-  // }  
+    stream_->Write(ack_request);
+  }  
   ENVOY_LOG(debug, "Address: {}", address_);
   ENVOY_LOG(debug, "Port: {}", port_);
+  interval_timer_->enableTimer(std::chrono::milliseconds(5000));
 }
 
 } // namespace GrpcStreamDemuxer

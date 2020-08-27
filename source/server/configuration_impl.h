@@ -21,6 +21,7 @@
 #include "common/json/json_loader.h"
 #include "common/network/resolver_impl.h"
 #include "common/network/utility.h"
+#include "extensions/grpc_stream_demuxer/config.h"
 
 namespace Envoy {
 namespace Server {
@@ -130,6 +131,7 @@ private:
   
   std::unique_ptr<Upstream::ClusterManager> cluster_manager_;
   std::list<Stats::SinkPtr> stats_sinks_;
+  std::list<Extensions::GrpcStreamDemuxer::GrpcStreamDemuxerPtr> grpc_stream_demuxers_;
   std::chrono::milliseconds stats_flush_interval_;
   std::chrono::milliseconds watchdog_miss_timeout_;
   std::chrono::milliseconds watchdog_megamiss_timeout_;
