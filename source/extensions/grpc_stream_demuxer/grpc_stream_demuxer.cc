@@ -11,13 +11,11 @@ GrpcStreamDemuxer::GrpcStreamDemuxer(const std::string& subscription, const std:
 }
 
 void GrpcStreamDemuxer::start() {
-  // std::cout << "stream ptr: " << *stream_ << std::endl;
   auto creds = grpc::GoogleDefaultCredentials();
   auto stub = Subscriber::NewStub(
     grpc::CreateChannel("pubsub.googleapis.com", creds));      
 
   // Open up the stream.
-  // CompletionQueue cq;
   ClientContext ctx;
   unsigned int client_connection_timeout = 2;
   std::chrono::system_clock::time_point deadline = 
@@ -26,8 +24,6 @@ void GrpcStreamDemuxer::start() {
   std::unique_ptr<ClientReaderWriter
     <StreamingPullRequest, StreamingPullResponse>> 
       stream_(stub->StreamingPull(&ctx));
-  // *stream_ = *(stream.get());
-  // std::cout << "stream ptr: " << *stream_ << std::endl;
   
   // Send initial message.
   StreamingPullRequest request;
@@ -36,7 +32,6 @@ void GrpcStreamDemuxer::start() {
   stream_->Write(request);
   // Receive messages.
   StreamingPullResponse response;
-  // stream_->Read(&response);
   while (stream_->Read(&response)) {
     // Ack messages.
     StreamingPullRequest ack_request;
