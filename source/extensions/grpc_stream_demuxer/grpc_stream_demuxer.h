@@ -32,8 +32,6 @@ public:
    */
   void start();
 
-  void startTimer();
-
 private:
   // Subscription name to connect to.
   std::string subscription_;
