@@ -45,14 +45,14 @@ TEST(GrpcStreamDemuxerTest, CreateGrpcStreamDemuxer) {
   )EOF";
   envoy::extensions::grpc_stream_demuxer::v3alpha::GrpcStreamDemuxer demuxer_object;
   TestUtility::loadFromYaml(yaml, demuxer_object);
-  auto& factory = Config::Utility::getAndCheckFactoryByName<Envoy::GrpcStreamDemuxer::GrpcStreamDemuxerFactory>("grpc_stream_demuxer");
-  Envoy::GrpcStreamDemuxer::GrpcStreamDemuxerPtr demuxer = factory.createGrpcStreamDemuxer(demuxer_object);
+  auto& factory = Config::Utility::getAndCheckFactoryByName<GrpcStreamDemuxerFactory>("grpc_stream_demuxer");
+  GrpcStreamDemuxerPtr demuxer = factory.createGrpcStreamDemuxer(demuxer_object);
   EXPECT_THAT(demuxer, testing::NotNull());
 }
 
 // Basic test to make sure GrpcStreamDemuxer initialization from an invalid factory name fails.
 TEST(GrpcStreamDemuxerTest, InvalidGrpcStreamDemuxerFactory) {
-  EXPECT_THROW(Config::Utility::getAndCheckFactoryByName<Envoy::GrpcStreamDemuxer::GrpcStreamDemuxerFactory>("invalid_factory_name"), 
+  EXPECT_THROW(Config::Utility::getAndCheckFactoryByName<GrpcStreamDemuxerFactory>("invalid_factory_name"), 
     EnvoyException);
 }
 
