@@ -6,6 +6,12 @@ namespace GrpcStreamDemuxer {
 
 GrpcStreamDemuxer::GrpcStreamDemuxer(const std::string& subscription, const std::string& address, int port, Event::Dispatcher& dispatcher) 
   : subscription_(subscription), address_(address), port_(port) {   	
+  interval_timer_ = dispatcher.createTimer([this]() -> void { start(); });
+  interval_timer_->enableTimer(std::chrono::milliseconds(5000));
+}
+
+void GrpcStreamDemuxer::start() {
+  // std::cout << "stream ptr: " << *stream_ << std::endl;
   auto creds = grpc::GoogleDefaultCredentials();
   auto stub = Subscriber::NewStub(
     grpc::CreateChannel("pubsub.googleapis.com", creds));      
@@ -19,9 +25,8 @@ GrpcStreamDemuxer::GrpcStreamDemuxer(const std::string& subscription, const std:
   ctx.set_deadline(deadline);
   std::unique_ptr<ClientReaderWriter
     <StreamingPullRequest, StreamingPullResponse>> 
-      stream(stub->StreamingPull(&ctx));
-  stream_ = stream.get();
-  ENVOY_LOG(info, "HAHAHA");
+      stream_(stub->StreamingPull(&ctx));
+  // *stream_ = *(stream.get());
   // std::cout << "stream ptr: " << *stream_ << std::endl;
   
   // Send initial message.
@@ -29,18 +34,9 @@ GrpcStreamDemuxer::GrpcStreamDemuxer(const std::string& subscription, const std:
   request.set_subscription(subscription_);
   request.set_stream_ack_deadline_seconds(10);
   stream_->Write(request);
-  interval_timer_ = dispatcher.createTimer([this]() -> void { start(); });
-  interval_timer_->enableTimer(std::chrono::milliseconds(5000));
-}
-
-void GrpcStreamDemuxer::start() {
-  ENVOY_LOG(debug, "Firing timer!");
-  // std::cout << "stream ptr: " << *stream_ << std::endl;
   // Receive messages.
   StreamingPullResponse response;
-  ENVOY_LOG(debug, "one");
   // stream_->Read(&response);
-  ENVOY_LOG(debug, "two");
   while (stream_->Read(&response)) {
     // Ack messages.
     StreamingPullRequest ack_request;
