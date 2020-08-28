@@ -69,10 +69,32 @@ TEST(GcpEventsConvertFilterUnitTest, DecodeDataWithCloudEvent) {
 
   // buffer simulate the buffered data and will be set manually
   Buffer::OwnedImpl buffer;
-  EXPECT_CALL(callbacks, decodingBuffer()).Times(1).WillOnce(testing::Return(&buffer));
+  EXPECT_CALL(callbacks, decodingBuffer).Times(0);
+  EXPECT_CALL(callbacks, modifyDecodingBuffer).Times(0);
+
+  Buffer::OwnedImpl data("random data");
+  EXPECT_EQ(Http::FilterDataStatus::StopIterationAndBuffer, filter.decodeData(data, false));
+}
+
+
+TEST(GcpEventsConvertFilterUnitTest, DecodeDataWithCloudEventEndOfStream) {
+  envoy::extensions::filters::http::gcp_events_convert::v3::GcpEventsConvert proto_config;
+  proto_config.set_content_type("application/grpc+cloudevent+json");
+  GcpEventsConvertFilter filter(std::make_shared<GcpEventsConvertFilterConfig>(proto_config),
+                                /*has_cloud_event=*/true);
+  Http::MockStreamDecoderFilterCallbacks callbacks;
+  filter.setDecoderFilterCallbacks(callbacks);
+
+  // buffer simulate the buffered data and will be set manually
+  Buffer::OwnedImpl buffer;
+  EXPECT_CALL(callbacks, decodingBuffer).Times(1).WillOnce(testing::Return(&buffer));
   EXPECT_CALL(callbacks, modifyDecodingBuffer)
       .Times(1)
-      .WillOnce([&buffer](std::function<void(Buffer::Instance&)> lambda) { lambda(buffer); });
+      .WillOnce([&buffer](std::function<void(Buffer::Instance&)> callback) {
+        // callback is the callback function parameter used to manipulate buffered data
+        // in our use case, we run the lambda function to manipulate buffered data manually
+        callback(buffer);
+      });
 
   // create a received message proto object
   ReceivedMessage received_message;
@@ -94,16 +116,13 @@ TEST(GcpEventsConvertFilterUnitTest, DecodeDataWithCloudEvent) {
   auto status = Envoy::ProtobufUtil::MessageToJsonString(received_message, &json_string);
   ASSERT_TRUE(status.ok());
 
-  Buffer::OwnedImpl data1(json_string);
-  EXPECT_EQ(Http::FilterDataStatus::StopIterationAndBuffer, filter.decodeData(data1, false));
-
-  // StopIterationAndBuffer : buffer data will buffer the string manually
+  // Previously stored data
   buffer.add(json_string);
 
-  Buffer::OwnedImpl data2;
-  EXPECT_EQ(Http::FilterDataStatus::Continue, filter.decodeData(data2, true));
+  Buffer::OwnedImpl data;
+  EXPECT_EQ(Http::FilterDataStatus::Continue, filter.decodeData(data, true));
 
-  ASSERT_EQ(buffer.toString(), "This is a example body");
+  EXPECT_EQ(buffer.toString(), "This is a example body");
 }
 
 TEST(GcpEventsConvertFilterUnitTest, DecodeDataWithRandomBody) {
@@ -114,8 +133,8 @@ TEST(GcpEventsConvertFilterUnitTest, DecodeDataWithRandomBody) {
   Http::MockStreamDecoderFilterCallbacks callbacks;
   filter.setDecoderFilterCallbacks(callbacks);
 
-  EXPECT_CALL(callbacks, decodingBuffer()).Times(0);
-  EXPECT_CALL(callbacks, modifyDecodingBuffer(_)).Times(0);
+  EXPECT_CALL(callbacks, decodingBuffer).Times(0);
+  EXPECT_CALL(callbacks, modifyDecodingBuffer).Times(0);
 
   Buffer::OwnedImpl data1("Hello");
   EXPECT_EQ(Http::FilterDataStatus::Continue, filter.decodeData(data1, false));

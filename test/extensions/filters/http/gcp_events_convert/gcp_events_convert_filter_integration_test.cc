@@ -93,7 +93,7 @@ TEST_P(GcpEventsConvertIntegrationTest, CloudEventNormalRequest) {
   ASSERT_TRUE(request_stream->waitForEndStream(*dispatcher_));
   response->waitForEndStream();
   // filter should replace body with given string
-  ASSERT_EQ(request_stream->body().toString(), "This is a example body");
+  EXPECT_EQ(request_stream->body().toString(), "This is a example body");
   codec_client->close();
 }
 
@@ -154,7 +154,7 @@ TEST_P(GcpEventsConvertIntegrationTest, CloudEventPartialMissingRequest) {
   ASSERT_TRUE(request_stream->waitForEndStream(*dispatcher_));
   response->waitForEndStream();
   // filter should be pass through since filter can not convert partial json string to proto object
-  ASSERT_EQ(request_stream->body().toString(), partial_json_string);
+  EXPECT_EQ(request_stream->body().toString(), partial_json_string);
   codec_client->close();
 }
 
@@ -190,7 +190,7 @@ TEST_P(GcpEventsConvertIntegrationTest, RandomRequest) {
   ASSERT_TRUE(request_stream->waitForEndStream(*dispatcher_));
   response->waitForEndStream();
   // filter should be pass through
-  ASSERT_EQ(request_stream->body().toString(), "hello  world!");
+  EXPECT_EQ(request_stream->body().toString(), "hello  world!");
   codec_client->close();
 }
 
@@ -213,7 +213,7 @@ TEST_P(GcpEventsConvertIntegrationTest, HeaderOnlyRequest) {
   ASSERT_TRUE(fake_upstream_connection->waitForNewStream(*dispatcher_, request_stream));
   ASSERT_TRUE(request_stream->waitForEndStream(*dispatcher_));
 
-  ASSERT_EQ(request_stream->body().toString(), "");
+  EXPECT_EQ(request_stream->body().toString(), "");
   response->waitForEndStream();
   codec_client->close();
 }
