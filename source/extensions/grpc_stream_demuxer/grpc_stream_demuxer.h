@@ -4,15 +4,6 @@
 
 #include "common/common/logger.h"
 
-#include "google/pubsub/v1/pubsub.grpc.pb.h"
-#include "grpc++/grpc++.h"
-
-using grpc::ClientContext;
-using grpc::ClientReaderWriter;
-using google::pubsub::v1::Subscriber;
-using google::pubsub::v1::StreamingPullRequest;
-using google::pubsub::v1::StreamingPullResponse;
-
 namespace Envoy {
 namespace Extensions {
 namespace GrpcStreamDemuxer {
