@@ -122,7 +122,7 @@ TEST(GcpEventsConvertFilterUnitTest, DecodeDataWithCloudEventEndOfStream) {
   Buffer::OwnedImpl data;
   EXPECT_EQ(Http::FilterDataStatus::Continue, filter.decodeData(data, true));
 
-  EXPECT_EQ(buffer.toString(), "This is a example body");
+  EXPECT_EQ(buffer.toString(), "certain body string text");
 }
 
 TEST(GcpEventsConvertFilterUnitTest, DecodeDataWithRandomBody) {
