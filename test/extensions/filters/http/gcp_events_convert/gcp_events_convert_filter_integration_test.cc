@@ -105,7 +105,6 @@ TEST_P(GcpEventsConvertIntegrationTest, CloudEventNormalRequest) {
             request_headers.get(Http::LowerCaseString("ce-type"))->value().getStringView());
   EXPECT_EQ("2020-03-10T03:56:24Z",
             request_headers.get(Http::LowerCaseString("ce-time"))->value().getStringView());
-
   codec_client->close();
 }
 
