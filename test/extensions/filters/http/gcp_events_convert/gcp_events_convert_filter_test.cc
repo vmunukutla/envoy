@@ -76,7 +76,6 @@ TEST(GcpEventsConvertFilterUnitTest, DecodeDataWithCloudEvent) {
   EXPECT_EQ(Http::FilterDataStatus::StopIterationAndBuffer, filter.decodeData(data, false));
 }
 
-
 TEST(GcpEventsConvertFilterUnitTest, DecodeDataWithCloudEventEndOfStream) {
   envoy::extensions::filters::http::gcp_events_convert::v3::GcpEventsConvert proto_config;
   proto_config.set_content_type("application/grpc+cloudevent+json");
