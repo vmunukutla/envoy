@@ -12,6 +12,7 @@ using grpc::Channel;
 using grpc::ClientContext;
 using grpc::Status;
 using envoy::service::pubsub::v3alpha::ReceivedMessageService;
+using google::pubsub::v1::PubsubMessage;
 using google::pubsub::v1::ReceivedMessage;
 
 namespace Envoy {
@@ -25,7 +26,7 @@ class ReceivedMessageServiceClient {
     
     // Assembles the client's payload, sends it and presents the response back
     // from the server.
-    std::string SendReceivedMessage(const ReceivedMessage &request) {
+    std::string SendReceivedMessage(ReceivedMessage &request) {
 
       // Container for the data we expect from the server.
       google::protobuf::Empty reply;

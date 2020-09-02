@@ -69,6 +69,8 @@ void adjustContentLength(Http::RequestOrResponseHeaderMap& headers,
 } // namespace
 
 Http::FilterHeadersStatus Filter::decodeHeaders(Http::RequestHeaderMap& headers, bool end_stream) {
+  std::cout << "========== decode header ==========" << std::endl;
+  std::cout << headers << std::endl;
   // Short circuit if header only.
   if (end_stream) {
     return Http::FilterHeadersStatus::Continue;
@@ -111,7 +113,11 @@ Http::FilterHeadersStatus Filter::decodeHeaders(Http::RequestHeaderMap& headers,
   return Http::FilterHeadersStatus::Continue;
 }
 
-Http::FilterDataStatus Filter::decodeData(Buffer::Instance& buffer, bool) {
+Http::FilterDataStatus Filter::decodeData(Buffer::Instance& buffer, bool end_stream) {
+  std::cout << "========== decode data ==========" << std::endl;
+  std::cout << "@buffer : " << std::endl << buffer.toString() << std::endl;
+  std::cout << "@buffer size: " << buffer.length() << std::endl;
+  std::cout << "@end stream : " << ( (end_stream) ? "true" : "false")  << std::endl;	
   if (enabled_ && withhold_grpc_frames_ && !prefix_stripped_) {
     // Fail the request if the body is too small to possibly contain a gRPC frame.
     if (buffer.length() < Grpc::GRPC_FRAME_HEADER_SIZE) {

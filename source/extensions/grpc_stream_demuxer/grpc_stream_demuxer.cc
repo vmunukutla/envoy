@@ -47,10 +47,26 @@ void GrpcStreamDemuxer::start() {
     for (const auto &message : response.received_messages()) {
       // Print the data from the message.
       ENVOY_LOG(info, "Pubsub message data: {}", message.message().data());
+
+      // create a received message proto object
+      ReceivedMessage received_message;
+      received_message.set_ack_id("random ack id");
+      received_message.set_delivery_attempt(3);
+      PubsubMessage& pubsub_message = *received_message.mutable_message();
+      google::protobuf::Map<std::string, std::string>& attributes =
+          *pubsub_message.mutable_attributes();
+      attributes["ce-specversion"] = "1.0";
+      attributes["ce-type"] = "com.example.some_event";
+      attributes["ce-time"] = "2020-03-10T03:56:24Z";
+      attributes["ce-id"] = "1234-1234-1234";
+      attributes["ce-source"] = "/mycontext/subcontext";
+      attributes["ce-datacontenttype"] = "application/text; charset=utf-8";
+      pubsub_message.set_data("cloud event data payload");
+      
       // Send the message using a unary grpc request.
       std::string target_uri = address_ + ":" + std::to_string(port_);
       ReceivedMessageServiceClient client(grpc::CreateChannel(target_uri, grpc::InsecureChannelCredentials()));
-      std::string reply = client.SendReceivedMessage(message);
+      std::string reply = client.SendReceivedMessage(received_message);
       ENVOY_LOG(info, "Unary request response: {}", reply);
       ack_request.add_ack_ids(message.ack_id());
     }
