@@ -1,7 +1,7 @@
 #include "extensions/grpc_stream_demuxer/grpc_stream_demuxer.h"
 
-#include "google/pubsub/v1/pubsub.grpc.pb.h"
-#include "grpc++/grpc++.h"
+#include "common/protobuf/protobuf.h"
+
 
 using grpc::ClientContext;
 using grpc::ClientReaderWriter;
@@ -47,6 +47,11 @@ void GrpcStreamDemuxer::start() {
     for (const auto &message : response.received_messages()) {
       // Print the data from the message.
       ENVOY_LOG(info, "Pubsub message data: {}", message.message().data());
+      // Send the message using a unary grpc request.
+      std::string target_uri = address_ + ":" + std::to_string(port_);
+      ReceivedMessageServiceClient client(grpc::CreateChannel(target_uri, grpc::InsecureChannelCredentials()));
+      std::string reply = client.SendReceivedMessage(message);
+      ENVOY_LOG(info, "Unary request response: {}", reply);
       ack_request.add_ack_ids(message.ack_id());
     }
     stream->Write(ack_request);
