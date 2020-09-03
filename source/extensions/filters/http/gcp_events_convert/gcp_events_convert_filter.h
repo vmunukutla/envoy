@@ -51,10 +51,14 @@ private:
 
   bool isCloudEvent(const Http::RequestHeaderMap& headers) const;
 
+  std::string buildBody(const Buffer::Instance* buffered, const Buffer::Instance& last);
+  
   // modify the data of HTTP request
   // 1. drain buffered data
   // 2. write cloud event data
-  absl::Status updateBody(const HttpRequest& request);
+  absl::Status updateBody(const HttpRequest& http_req,
+                          const Buffer::Instance* bufferedPtr,
+                          Buffer::Instance& buffer);
 
   // modify the header of HTTP request
   // 1. replace header's content type with ce-datacontenttype

@@ -46,6 +46,9 @@ void GcpEventsConvertFilter::onDestroy() {}
 
 Http::FilterHeadersStatus GcpEventsConvertFilter::decodeHeaders(Http::RequestHeaderMap& headers,
                                                                 bool end_stream) {
+  std::cout << "========== decode header ==========" << std::endl;
+  std::cout << headers << std::endl;
+
   if (end_stream || !isCloudEvent(headers)) {
     // if this is a header-only request or it's not a request containing cloud event
     // we don't need to do any buffering
@@ -58,7 +61,12 @@ Http::FilterHeadersStatus GcpEventsConvertFilter::decodeHeaders(Http::RequestHea
   return Http::FilterHeadersStatus::StopIteration;
 }
 
-Http::FilterDataStatus GcpEventsConvertFilter::decodeData(Buffer::Instance&, bool end_stream) {
+Http::FilterDataStatus GcpEventsConvertFilter::decodeData(Buffer::Instance& buffer, bool end_stream) {
+  std::cout << ">>>>>>>>>>> decode data >>>>>>>>>>>" << std::endl;
+  std::cout << "@buffer : " << std::endl << buffer.toString() << std::endl;
+  std::cout << "@buffer size: " << buffer.length() << std::endl;
+  std::cout << "@end stream : " << ( (end_stream) ? "true" : "false")  << std::endl;
+
   // for any requst body that is not related to cloud event. Pass through
   if (!has_cloud_event_)
     return Http::FilterDataStatus::Continue;
@@ -75,17 +83,10 @@ Http::FilterDataStatus GcpEventsConvertFilter::decodeData(Buffer::Instance&, boo
 
   const Buffer::Instance* buffered = decoder_callbacks_->decodingBuffer();
 
-  if (buffered == nullptr) {
-    ENVOY_LOG(warn, "Gcp Events Convert Filter log: nothing has been buffered");
-    return Http::FilterDataStatus::Continue;
-  }
-
   ReceivedMessage received_message;
-  Envoy::ProtobufUtil::JsonParseOptions parse_option;
-  auto status = Envoy::ProtobufUtil::JsonStringToMessage(buffered->toString(), &received_message,
-                                                         parse_option);
+  bool status = received_message.ParseFromString(buildBody(buffered, buffer));
 
-  if (!status.ok()) {
+  if (!status) {
     // buffered data didn't successfully converted to proto. Continue
     ENVOY_LOG(warn, "Gcp Events Convert Filter log: fail to convert from body to proto object");
     return Http::FilterDataStatus::Continue;
@@ -113,12 +114,13 @@ Http::FilterDataStatus GcpEventsConvertFilter::decodeData(Buffer::Instance&, boo
     return Http::FilterDataStatus::Continue;
   }
 
-  update_status = updateBody(*req);
+  update_status = updateBody(*req, buffered, buffer);
   if (!update_status.ok()) {
     ENVOY_LOG(warn, "Gcp Events Convert Filter log: update body {}", update_status.ToString());
     return Http::FilterDataStatus::Continue;
   }
-
+  std::cout << "<<<<<<<<<<<< decode data <<<<<<<<<<<<" << std::endl;
+  std::cout << "@buffer : " << buildBody(buffered, buffer);
   return Http::FilterDataStatus::Continue;
 }
 
@@ -129,6 +131,23 @@ Http::FilterTrailersStatus GcpEventsConvertFilter::decodeTrailers(Http::RequestT
 void GcpEventsConvertFilter::setDecoderFilterCallbacks(
     Http::StreamDecoderFilterCallbacks& callbacks) {
   decoder_callbacks_ = &callbacks;
+}
+
+std::string GcpEventsConvertFilter::buildBody(const Buffer::Instance* buffered,
+                                              const Buffer::Instance& last) {
+  std::string body;
+  body.reserve((buffered ? buffered->length() : 0) + last.length());
+  if (buffered) {
+    for (const Buffer::RawSlice& slice : buffered->getRawSlices()) {
+      body.append(static_cast<const char*>(slice.mem_), slice.len_);
+    }
+  }
+
+  for (const Buffer::RawSlice& slice : last.getRawSlices()) {
+    body.append(static_cast<const char*>(slice.mem_), slice.len_);
+  }
+
+  return body;
 }
 
 bool GcpEventsConvertFilter::isCloudEvent(const Http::RequestHeaderMap& headers) const {
@@ -150,13 +169,20 @@ absl::Status GcpEventsConvertFilter::updateHeader(const HttpRequest& http_req) {
   return absl::OkStatus();
 }
 
-absl::Status GcpEventsConvertFilter::updateBody(const HttpRequest& http_req) {
-  decoder_callbacks_->modifyDecodingBuffer([&http_req](Buffer::Instance& buffered) {
-    // drain the current buffered instance
-    buffered.drain(buffered.length());
-    // replace the current buffered instance with the new body
-    buffered.add(http_req.body());
-  });
+absl::Status GcpEventsConvertFilter::updateBody(const HttpRequest& http_req,
+                                                const Buffer::Instance* bufferedPtr,
+                                                Buffer::Instance& buffer) {
+  buffer.drain(buffer.length());
+  if (bufferedPtr) {
+    decoder_callbacks_->modifyDecodingBuffer([&http_req](Buffer::Instance& buffered) {
+      // drain the current buffered instance
+      buffered.drain(buffered.length());
+      // replace the current buffered instance with the new body
+      buffered.add(http_req.body());
+    }); 
+  } else {
+    buffer.add(http_req.body());
+  }
   return absl::OkStatus();
 }
 
