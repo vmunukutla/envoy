@@ -1,17 +1,32 @@
 #include "extensions/grpc_stream_demuxer/grpc_stream_demuxer.h"
 
-#include "common/protobuf/protobuf.h"
-
-using grpc::ClientContext;
-using grpc::ClientReaderWriter;
-using google::pubsub::v1::Subscriber;
-using google::pubsub::v1::StreamingPullRequest;
-using google::pubsub::v1::StreamingPullResponse;
-
 namespace Envoy {
 namespace Extensions {
 namespace GrpcStreamDemuxer {
 
+ReceivedMessageServiceClient::ReceivedMessageServiceClient(std::shared_ptr<Channel> channel)
+  : stub_(ReceivedMessageService::NewStub(channel)) {}
+
+// Assembles the client's payload, sends it and presents the response back
+// from the server.
+std::string ReceivedMessageServiceClient::SendReceivedMessage(const ReceivedMessage &request) {
+  google::protobuf::Empty reply;
+  // Context for the client. It could be used to convey extra information to
+  // the server and/or tweak certain RPC behaviors.
+  ClientContext context;
+
+  // The actual RPC.
+  Status status = stub_->SendReceivedMessage(&context, request, &reply);
+
+  // Act upon its status.
+  if (status.ok()) {
+    return "RPC worked";
+  } else {
+    std::cout << status.error_code() << ": " << status.error_message() << std::endl;
+    return "RPC failed";
+  }
+}
+	
 GrpcStreamDemuxer::GrpcStreamDemuxer(const std::string& subscription, const std::string& address, int port, Event::Dispatcher& dispatcher) 
   : subscription_(subscription), address_(address), port_(port) {   	
   interval_timer_ = dispatcher.createTimer([this]() -> void { start(); });

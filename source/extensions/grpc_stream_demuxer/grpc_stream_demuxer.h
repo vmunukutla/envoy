@@ -10,9 +10,13 @@
 
 using grpc::Channel;
 using grpc::ClientContext;
+using grpc::ClientReaderWriter;
 using grpc::Status;
-using envoy::service::pubsub::v3alpha::ReceivedMessageService;
+using google::pubsub::v1::Subscriber;
+using google::pubsub::v1::StreamingPullRequest;
+using google::pubsub::v1::StreamingPullResponse;
 using google::pubsub::v1::ReceivedMessage;
+using envoy::service::pubsub::v3alpha::ReceivedMessageService;
 
 namespace Envoy {
 namespace Extensions {
@@ -20,33 +24,10 @@ namespace GrpcStreamDemuxer {
 
 class ReceivedMessageServiceClient {
   public:
-    ReceivedMessageServiceClient(std::shared_ptr<Channel> channel)
-      : stub_(ReceivedMessageService::NewStub(channel)) {}
+    ReceivedMessageServiceClient(std::shared_ptr<Channel> channel);
+
+    std::string SendReceivedMessage(const ReceivedMessage &request);
     
-    // Assembles the client's payload, sends it and presents the response back
-    // from the server.
-    std::string SendReceivedMessage(const ReceivedMessage &request) {
-
-      // Container for the data we expect from the server.
-      google::protobuf::Empty reply;
-
-      // Context for the client. It could be used to convey extra information to
-      // the server and/or tweak certain RPC behaviors.
-      ClientContext context;
-
-      // The actual RPC.
-      Status status = stub_->SendReceivedMessage(&context, request, &reply);
-
-      // Act upon its status.
-      if (status.ok()) {
-        return "RPC worked";
-      } else {
-        std::cout << status.error_code() << ": " << status.error_message()
-                  << std::endl;
-        return "RPC failed";
-      }
-    }
-
   private:
     std::unique_ptr<ReceivedMessageService::Stub> stub_;
 };
