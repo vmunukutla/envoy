@@ -179,6 +179,7 @@ proto_library(
         "//envoy/extensions/filters/http/dynamo/v3:pkg",
         "//envoy/extensions/filters/http/ext_authz/v3:pkg",
         "//envoy/extensions/filters/http/fault/v3:pkg",
+        "//envoy/extensions/filters/http/gcp_events_convert/v3:pkg",
         "//envoy/extensions/filters/http/grpc_http1_bridge/v3:pkg",
         "//envoy/extensions/filters/http/grpc_http1_reverse_bridge/v3:pkg",
         "//envoy/extensions/filters/http/grpc_json_transcoder/v3:pkg",
