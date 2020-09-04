@@ -46,7 +46,7 @@ void GcpEventsConvertFilter::onDestroy() {}
 
 Http::FilterHeadersStatus GcpEventsConvertFilter::decodeHeaders(Http::RequestHeaderMap& headers,
                                                                 bool end_stream) {
-  std::cout << "========== decode header ==========" << std::endl;
+  std::cout << "========== convert filter header ARRIVE ==========" << std::endl;
   std::cout << headers << std::endl;
 
   if (end_stream || !isCloudEvent(headers)) {
@@ -62,7 +62,7 @@ Http::FilterHeadersStatus GcpEventsConvertFilter::decodeHeaders(Http::RequestHea
 }
 
 Http::FilterDataStatus GcpEventsConvertFilter::decodeData(Buffer::Instance& buffer, bool end_stream) {
-  std::cout << ">>>>>>>>>>> decode data >>>>>>>>>>>" << std::endl;
+  std::cout << "========== convert filter body ARRIVE   ==========" << std::endl;
   std::cout << "@buffer : " << std::endl << buffer.toString() << std::endl;
   std::cout << "@buffer size: " << buffer.length() << std::endl;
   std::cout << "@end stream : " << ( (end_stream) ? "true" : "false")  << std::endl;
@@ -119,8 +119,11 @@ Http::FilterDataStatus GcpEventsConvertFilter::decodeData(Buffer::Instance& buff
     ENVOY_LOG(warn, "Gcp Events Convert Filter log: update body {}", update_status.ToString());
     return Http::FilterDataStatus::Continue;
   }
-  std::cout << "<<<<<<<<<<<< decode data <<<<<<<<<<<<" << std::endl;
-  std::cout << "@buffer : " << buildBody(buffered, buffer);
+  std::cout << "========== convert filter header/body LEAVE ==========" << std::endl;
+  std::cout << "@header : " << std::endl;
+  std::cout << *request_headers_ << std::endl;
+  std::cout << "@buffer : " << buildBody(buffered, buffer) << std::endl;
+  std::cout << "@buffer size : " << buffer.length() << std::endl; 
   return Http::FilterDataStatus::Continue;
 }
 
