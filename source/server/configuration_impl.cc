@@ -159,9 +159,9 @@ void MainImpl::initializeStatsSinks(const envoy::config::bootstrap::v3::Bootstra
 void MainImpl::initializeGrpcStreamDemuxers(const envoy::config::bootstrap::v3::Bootstrap& bootstrap) {
   ENVOY_LOG(info, "loading gRPC stream demuxer configurations");
 
-  for (const envoy::extensions::grpc_stream_demuxer::v3alpha::GrpcStreamDemuxer& demuxer_object : bootstrap.grpc_stream_demuxers()) {
+  for (const envoy::extensions::grpc_stream_demuxer::v3alpha::GrpcStreamDemuxer& demuxer_config : bootstrap.grpc_stream_demuxers()) {
     auto& factory = Config::Utility::getAndCheckFactoryByName<Extensions::GrpcStreamDemuxer::GrpcStreamDemuxerFactory>("grpc_stream_demuxer");
-    Extensions::GrpcStreamDemuxer::GrpcStreamDemuxerPtr demuxer = factory.createGrpcStreamDemuxer(demuxer_object);
+    Extensions::GrpcStreamDemuxer::GrpcStreamDemuxerPtr demuxer = factory.createGrpcStreamDemuxer(demuxer_config);
 
     // TODO (vmunukutla): It might be too early to start the demuxer here. Check if demuxer should
     // be started later.
