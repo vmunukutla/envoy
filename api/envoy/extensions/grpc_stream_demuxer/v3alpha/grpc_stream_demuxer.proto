@@ -18,7 +18,7 @@ message GrpcStreamDemuxer {
   // Pubsub pull subscription to initiate a streaming pull.
   string subscription = 1;
 
-  // Address to which grpc unary requests are sent to. 
+  // Address to which grpc unary requests are sent to.
   // Should match listener address.
   string address = 2;
 
