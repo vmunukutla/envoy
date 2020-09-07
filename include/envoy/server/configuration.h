@@ -10,6 +10,7 @@
 #include "envoy/config/bootstrap/v3/bootstrap.pb.h"
 #include "envoy/stats/sink.h"
 #include "envoy/upstream/cluster_manager.h"
+#include "extensions/grpc_stream_demuxer/config.h"
 
 #include "absl/types/optional.h"
 
@@ -34,6 +35,12 @@ public:
    * @return std::list<Stats::SinkPtr>& the list of stats sinks initialized from the configuration.
    */
   virtual std::list<Stats::SinkPtr>& statsSinks() PURE;
+
+  /**
+   * @return std::list<Extensions::GrpcStreamDemuxer::GrpcStreamDemuxerPtr>& the list of 
+             grpc_stream_demuxers initialized from the configuration.
+   */
+  virtual std::list<Extensions::GrpcStreamDemuxer::GrpcStreamDemuxerPtr>& grpcStreamDemuxers() PURE;
 
   /**
    * @return std::chrono::milliseconds the time interval between flushing to configured stat sinks.
