@@ -11,10 +11,13 @@ namespace Lua {
 
 HeaderMapIterator::HeaderMapIterator(HeaderMapWrapper& parent) : parent_(parent) {
   entries_.reserve(parent_.headers_.size());
-  parent_.headers_.iterate([this](const Http::HeaderEntry& header) -> Http::HeaderMap::Iterate {
-    entries_.push_back(&header);
-    return Http::HeaderMap::Iterate::Continue;
-  });
+  parent_.headers_.iterate(
+      [](const Http::HeaderEntry& header, void* context) -> Http::HeaderMap::Iterate {
+        HeaderMapIterator* iterator = static_cast<HeaderMapIterator*>(context);
+        iterator->entries_.push_back(&header);
+        return Http::HeaderMap::Iterate::Continue;
+      },
+      this);
 }
 
 int HeaderMapIterator::luaPairsIterator(lua_State* state) {
@@ -113,21 +116,6 @@ int StreamInfoWrapper::luaDynamicMetadata(lua_State* state) {
   return 1;
 }
 
-int StreamInfoWrapper::luaDownstreamSslConnection(lua_State* state) {
-  const auto& ssl = stream_info_.downstreamSslConnection();
-  if (ssl != nullptr) {
-    if (downstream_ssl_connection_.get() != nullptr) {
-      downstream_ssl_connection_.pushStack();
-    } else {
-      downstream_ssl_connection_.reset(
-          Filters::Common::Lua::SslConnectionWrapper::create(state, *ssl), true);
-    }
-  } else {
-    lua_pushnil(state);
-  }
-  return 1;
-}
-
 DynamicMetadataMapIterator::DynamicMetadataMapIterator(DynamicMetadataMapWrapper& parent)
     : parent_{parent}, current_{parent_.streamInfo().dynamicMetadata().filter_metadata().begin()} {}
 
@@ -190,10 +178,16 @@ int DynamicMetadataMapWrapper::luaPairs(lua_State* state) {
 }
 
 int PublicKeyWrapper::luaGet(lua_State* state) {
-  if (public_key_.empty()) {
+  if (public_key_ == nullptr || public_key_.get() == nullptr) {
     lua_pushnil(state);
   } else {
-    lua_pushstring(state, public_key_.c_str());
+    auto wrapper = Common::Crypto::Access::getTyped<Common::Crypto::PublicKeyObject>(*public_key_);
+    EVP_PKEY* pkey = wrapper->getEVP_PKEY();
+    if (pkey == nullptr) {
+      lua_pushnil(state);
+    } else {
+      lua_pushlightuserdata(state, public_key_.get());
+    }
   }
   return 1;
 }

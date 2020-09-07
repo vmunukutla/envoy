@@ -203,12 +203,9 @@ Histogram& TestStore::histogramFromStatNameWithTags(const StatName& stat_name,
 }
 
 template <class StatType>
-using StatTypeOptConstRef = absl::optional<std::reference_wrapper<const StatType>>;
-
-template <class StatType>
-static StatTypeOptConstRef<StatType>
+static absl::optional<std::reference_wrapper<const StatType>>
 findByString(const std::string& name, const absl::flat_hash_map<std::string, StatType*>& map) {
-  StatTypeOptConstRef<StatType> ret;
+  absl::optional<std::reference_wrapper<const StatType>> ret;
   auto iter = map.find(name);
   if (iter != map.end()) {
     ret = *iter->second;

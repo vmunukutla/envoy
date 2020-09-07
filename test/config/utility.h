@@ -110,10 +110,6 @@ public:
       const std::string& name, const std::string& lb_policy = "ROUND_ROBIN",
       envoy::config::core::v3::ApiVersion api_version = envoy::config::core::v3::ApiVersion::V3);
 
-  static envoy::config::cluster::v3::Cluster buildTlsCluster(
-      const std::string& name, const std::string& lb_policy = "ROUND_ROBIN",
-      envoy::config::core::v3::ApiVersion api_version = envoy::config::core::v3::ApiVersion::V3);
-
   static envoy::config::endpoint::v3::ClusterLoadAssignment buildClusterLoadAssignment(
       const std::string& name, const std::string& ip_version, uint32_t port,
       envoy::config::core::v3::ApiVersion api_version = envoy::config::core::v3::ApiVersion::V3);
@@ -232,9 +228,6 @@ public:
   void setLocalReply(
       const envoy::extensions::filters::network::http_connection_manager::v3::LocalReplyConfig&
           config);
-
-  // Set new codecs to use for upstream and downstream codecs.
-  void setNewCodecs();
 
 private:
   static bool shouldBoost(envoy::config::core::v3::ApiVersion api_version) {

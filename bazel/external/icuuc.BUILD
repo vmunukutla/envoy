@@ -2,7 +2,10 @@ load("@rules_cc//cc:defs.bzl", "cc_library")
 
 licenses(["notice"])  # Apache 2
 
-exports_files(["LICENSE"])
+exports_files([
+    "icu4c/LICENSE",
+    "icu4j/main/shared/licenses/LICENSE",
+])
 
 icuuc_copts = [
     "-DU_STATIC_IMPLEMENTATION",
@@ -28,15 +31,15 @@ icuuc_copts = [
 
 cc_library(
     name = "headers",
-    hdrs = glob(["source/common/unicode/*.h"]),
-    includes = ["source/common"],
+    hdrs = glob(["icu4c/source/common/unicode/*.h"]),
+    includes = ["icu4c/source/common"],
     visibility = ["//visibility:public"],
 )
 
 cc_library(
     name = "common",
-    hdrs = glob(["source/common/unicode/*.h"]),
-    includes = ["source/common"],
+    hdrs = glob(["icu4c/source/common/unicode/*.h"]),
+    includes = ["icu4c/source/common"],
     visibility = ["//visibility:public"],
     deps = [":icuuc"],
 )
@@ -44,12 +47,13 @@ cc_library(
 cc_library(
     name = "icuuc",
     srcs = glob([
-        "source/common/*.c",
-        "source/common/*.cpp",
-        "source/stubdata/*.cpp",
+        "icu4c/source/common/*.c",
+        "icu4c/source/common/*.cpp",
+        "icu4c/source/stubdata/*.cpp",
     ]),
-    hdrs = glob(["source/common/*.h"]),
+    hdrs = glob(["icu4c/source/common/*.h"]),
     copts = icuuc_copts,
+    tags = ["requires-rtti"],
     visibility = ["//visibility:private"],
     deps = [":headers"],
 )

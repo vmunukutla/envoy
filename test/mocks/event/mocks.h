@@ -64,9 +64,8 @@ public:
   }
 
   Network::ListenerPtr createListener(Network::SocketSharedPtr&& socket,
-                                      Network::ListenerCallbacks& cb, bool bind_to_port,
-                                      uint32_t backlog_size) override {
-    return Network::ListenerPtr{createListener_(std::move(socket), cb, bind_to_port, backlog_size)};
+                                      Network::ListenerCallbacks& cb, bool bind_to_port) override {
+    return Network::ListenerPtr{createListener_(std::move(socket), cb, bind_to_port)};
   }
 
   Network::UdpListenerPtr createUdpListener(Network::SocketSharedPtr&& socket,
@@ -116,7 +115,7 @@ public:
   MOCK_METHOD(Filesystem::Watcher*, createFilesystemWatcher_, ());
   MOCK_METHOD(Network::Listener*, createListener_,
               (Network::SocketSharedPtr && socket, Network::ListenerCallbacks& cb,
-               bool bind_to_port, uint32_t backlog_size));
+               bool bind_to_port));
   MOCK_METHOD(Network::UdpListener*, createUdpListener_,
               (Network::SocketSharedPtr && socket, Network::UdpListenerCallbacks& cb));
   MOCK_METHOD(Timer*, createTimer_, (Event::TimerCb cb));
@@ -171,6 +170,7 @@ public:
   const ScopeTrackedObject* scope_{};
   bool enabled_{};
 
+private:
   Event::TimerCb callback_;
 };
 

@@ -103,8 +103,7 @@ bool GenericKeyAction::populateDescriptor(const Router::RouteEntry&,
 
 DynamicMetaDataAction::DynamicMetaDataAction(
     const envoy::config::route::v3::RateLimit::Action::DynamicMetaData& action)
-    : metadata_key_(action.metadata_key()), descriptor_key_(action.descriptor_key()),
-      default_value_(action.default_value()) {}
+    : metadata_key_(action.metadata_key()), descriptor_key_(action.descriptor_key()) {}
 
 bool DynamicMetaDataAction::populateDescriptor(
     const Router::RouteEntry&, RateLimit::Descriptor& descriptor, const std::string&,
@@ -112,16 +111,12 @@ bool DynamicMetaDataAction::populateDescriptor(
     const envoy::config::core::v3::Metadata* dynamic_metadata) const {
   const ProtobufWkt::Value& metadata_value =
       Envoy::Config::Metadata::metadataValue(dynamic_metadata, metadata_key_);
-
-  if (!metadata_value.string_value().empty()) {
-    descriptor.entries_.push_back({descriptor_key_, metadata_value.string_value()});
-    return true;
-  } else if (metadata_value.string_value().empty() && !default_value_.empty()) {
-    descriptor.entries_.push_back({descriptor_key_, default_value_});
-    return true;
+  if (metadata_value.kind_case() != ProtobufWkt::Value::kStringValue) {
+    return false;
   }
+  descriptor.entries_.push_back({descriptor_key_, metadata_value.string_value()});
 
-  return false;
+  return !metadata_value.string_value().empty();
 }
 
 HeaderValueMatchAction::HeaderValueMatchAction(

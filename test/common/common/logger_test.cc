@@ -8,32 +8,30 @@
 namespace Envoy {
 namespace Logger {
 
-TEST(LoggerTest, StackingStderrSinkDelegate) {
-  StderrSinkDelegate stacked(Envoy::Logger::Registry::getSink());
-}
+class LoggerEscapeTest : public testing::Test {};
 
-TEST(LoggerEscapeTest, LinuxEOL) {
+TEST_F(LoggerEscapeTest, LinuxEOL) {
   EXPECT_EQ("line 1 \\n line 2\n", DelegatingLogSink::escapeLogLine("line 1 \n line 2\n"));
 }
 
-TEST(LoggerEscapeTest, WindowEOL) {
+TEST_F(LoggerEscapeTest, WindowEOL) {
   EXPECT_EQ("line 1 \\n line 2\r\n", DelegatingLogSink::escapeLogLine("line 1 \n line 2\r\n"));
 }
 
-TEST(LoggerEscapeTest, NoTrailingWhitespace) {
+TEST_F(LoggerEscapeTest, NoTrailingWhitespace) {
   EXPECT_EQ("line 1 \\n line 2", DelegatingLogSink::escapeLogLine("line 1 \n line 2"));
 }
 
-TEST(LoggerEscapeTest, NoWhitespace) {
+TEST_F(LoggerEscapeTest, NoWhitespace) {
   EXPECT_EQ("line1", DelegatingLogSink::escapeLogLine("line1"));
 }
 
-TEST(LoggerEscapeTest, AnyTrailingWhitespace) {
+TEST_F(LoggerEscapeTest, AnyTrailingWhitespace) {
   EXPECT_EQ("line 1 \\t tab 1 \\n line 2\t\n",
             DelegatingLogSink::escapeLogLine("line 1 \t tab 1 \n line 2\t\n"));
 }
 
-TEST(LoggerEscapeTest, WhitespaceOnly) {
+TEST_F(LoggerEscapeTest, WhitespaceOnly) {
   // 8 spaces
   EXPECT_EQ("        ", DelegatingLogSink::escapeLogLine("        "));
 
@@ -41,7 +39,7 @@ TEST(LoggerEscapeTest, WhitespaceOnly) {
   EXPECT_EQ("\r\n\t \r\n \n", DelegatingLogSink::escapeLogLine("\r\n\t \r\n \n"));
 }
 
-TEST(LoggerEscapeTest, Empty) { EXPECT_EQ("", DelegatingLogSink::escapeLogLine("")); }
+TEST_F(LoggerEscapeTest, Empty) { EXPECT_EQ("", DelegatingLogSink::escapeLogLine("")); }
 
 } // namespace Logger
 } // namespace Envoy

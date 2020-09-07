@@ -13,7 +13,6 @@
 #include "extensions/transport_sockets/alts/grpc_tsi.h"
 #include "extensions/transport_sockets/alts/tsi_socket.h"
 
-#include "absl/container/node_hash_set.h"
 #include "absl/strings/str_join.h"
 
 namespace Envoy {
@@ -38,7 +37,7 @@ void grpcAltsSetRpcProtocolVersions(grpc_gcp_rpc_protocol_versions* rpc_versions
 
 // Returns true if the peer's service account is found in peers, otherwise
 // returns false and fills out err with an error message.
-bool doValidate(const tsi_peer& peer, const absl::node_hash_set<std::string>& peers,
+bool doValidate(const tsi_peer& peer, const std::unordered_set<std::string>& peers,
                 std::string& err) {
   for (size_t i = 0; i < peer.property_count; ++i) {
     const std::string name = std::string(peer.properties[i].name);
@@ -58,8 +57,8 @@ bool doValidate(const tsi_peer& peer, const absl::node_hash_set<std::string>& pe
 HandshakeValidator
 createHandshakeValidator(const envoy::extensions::transport_sockets::alts::v3::Alts& config) {
   const auto& peer_service_accounts = config.peer_service_accounts();
-  const absl::node_hash_set<std::string> peers(peer_service_accounts.cbegin(),
-                                               peer_service_accounts.cend());
+  const std::unordered_set<std::string> peers(peer_service_accounts.cbegin(),
+                                              peer_service_accounts.cend());
   HandshakeValidator validator;
   // Skip validation if peers is empty.
   if (!peers.empty()) {

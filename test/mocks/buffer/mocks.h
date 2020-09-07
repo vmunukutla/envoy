@@ -133,8 +133,4 @@ ACTION_P(AddBufferToStringWithoutDraining, target_string) {
   target_string->append(arg0.toString());
 }
 
-MATCHER_P(RawSliceVectorEqual, rhs, testing::PrintToString(rhs)) {
-  return TestUtility::rawSlicesEqual(arg, rhs.data(), rhs.size());
-}
-
 } // namespace Envoy

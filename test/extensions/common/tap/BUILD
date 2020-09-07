@@ -25,8 +25,17 @@ envoy_cc_test(
     srcs = ["admin_test.cc"],
     deps = [
         "//source/extensions/common/tap:admin",
-        "//test/mocks/server:admin_mocks",
-        "//test/mocks/server:admin_stream_mocks",
+        "//test/mocks/server:server_mocks",
+        "@envoy_api//envoy/config/tap/v3:pkg_cc_proto",
+    ],
+)
+
+envoy_cc_test(
+    name = "tap_matcher_test",
+    srcs = ["tap_matcher_test.cc"],
+    deps = [
+        "//source/extensions/common/tap:tap_matcher",
+        "//test/test_common:utility_lib",
         "@envoy_api//envoy/config/tap/v3:pkg_cc_proto",
     ],
 )

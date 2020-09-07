@@ -37,7 +37,7 @@ public:
   };
 
   using RouteMatcherNameMap =
-      absl::node_hash_map<RouteMatcherType, std::string, RouteMatcherTypeHash>;
+      std::unordered_map<RouteMatcherType, std::string, RouteMatcherTypeHash>;
 
   const RouteMatcherNameMap routeMatcherNameMap = {
       {RouteMatcherType::Default, "default"},

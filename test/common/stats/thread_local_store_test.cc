@@ -1,6 +1,7 @@
 #include <chrono>
 #include <memory>
 #include <string>
+#include <unordered_map>
 
 #include "envoy/config/metrics/v3/stats.pb.h"
 #include "envoy/stats/histogram.h"
@@ -16,7 +17,7 @@
 
 #include "test/common/stats/stat_test_utility.h"
 #include "test/mocks/event/mocks.h"
-#include "test/mocks/server/instance.h"
+#include "test/mocks/server/mocks.h"
 #include "test/mocks/stats/mocks.h"
 #include "test/mocks/thread_local/mocks.h"
 #include "test/test_common/logging.h"
@@ -29,7 +30,6 @@
 #include "gtest/gtest.h"
 
 using testing::_;
-using testing::HasSubstr;
 using testing::InSequence;
 using testing::NiceMock;
 using testing::Ref;
@@ -39,30 +39,6 @@ namespace Envoy {
 namespace Stats {
 
 const uint64_t MaxStatNameLength = 127;
-
-class ThreadLocalStoreTestingPeer {
-public:
-  // Calculates the number of TLS histograms across all threads. This requires
-  // dispatching to all threads and blocking on their completion, and is exposed
-  // as a testing peer to enable tests that ensure that TLS histograms don't
-  // leak.
-  //
-  // Note that this must be called from the "main thread", which has different
-  // implications for unit tests that use real threads vs mocks. The easiest way
-  // to capture this in a general purpose helper is to use a callback to convey
-  // the resultant sum.
-  static void numTlsHistograms(ThreadLocalStoreImpl& thread_local_store_impl,
-                               const std::function<void(uint32_t)>& num_tls_hist_cb) {
-    auto num_tls_histograms = std::make_shared<std::atomic<uint32_t>>(0);
-    thread_local_store_impl.tls_->runOnAllThreads(
-        [&thread_local_store_impl, num_tls_histograms]() {
-          auto& tls_cache =
-              thread_local_store_impl.tls_->getTyped<ThreadLocalStoreImpl::TlsCache>();
-          *num_tls_histograms += tls_cache.tls_histogram_cache_.size();
-        },
-        [num_tls_hist_cb, num_tls_histograms]() { num_tls_hist_cb(*num_tls_histograms); });
-  }
-};
 
 class StatsThreadLocalStoreTest : public testing::Test {
 public:
@@ -77,27 +53,12 @@ public:
     store_->addSink(sink_);
   }
 
-  uint32_t numTlsHistograms() {
-    uint32_t num_tls_histograms;
-    absl::Mutex mutex;
-    bool done = false;
-    ThreadLocalStoreTestingPeer::numTlsHistograms(
-        *store_, [&mutex, &done, &num_tls_histograms](uint32_t num) {
-          absl::MutexLock lock(&mutex);
-          num_tls_histograms = num;
-          done = true;
-        });
-    absl::MutexLock lock(&mutex);
-    mutex.Await(absl::Condition(&done));
-    return num_tls_histograms;
-  }
-
   SymbolTablePtr symbol_table_;
   NiceMock<Event::MockDispatcher> main_thread_dispatcher_;
   NiceMock<ThreadLocal::MockInstance> tls_;
   AllocatorImpl alloc_;
   MockSink sink_;
-  ThreadLocalStoreImplPtr store_;
+  std::unique_ptr<ThreadLocalStoreImpl> store_;
 };
 
 class HistogramWrapper {
@@ -215,7 +176,7 @@ public:
   NiceMock<ThreadLocal::MockInstance> tls_;
   AllocatorImpl alloc_;
   MockSink sink_;
-  ThreadLocalStoreImplPtr store_;
+  std::unique_ptr<ThreadLocalStoreImpl> store_;
   InSequence s;
   std::vector<uint64_t> h1_cumulative_values_, h2_cumulative_values_, h1_interval_values_,
       h2_interval_values_;
@@ -421,52 +382,6 @@ TEST_F(StatsThreadLocalStoreTest, BasicScope) {
   store_->shutdownThreading();
   scope1->deliverHistogramToSinks(h1, 100);
   scope1->deliverHistogramToSinks(h2, 200);
-  scope1.reset();
-  tls_.shutdownThread();
-}
-
-TEST_F(StatsThreadLocalStoreTest, HistogramScopeOverlap) {
-  InSequence s;
-  store_->initializeThreading(main_thread_dispatcher_, tls_);
-
-  // Creating two scopes with the same name gets you two distinct scope objects.
-  ScopePtr scope1 = store_->createScope("scope.");
-  ScopePtr scope2 = store_->createScope("scope.");
-  EXPECT_NE(scope1, scope2);
-
-  EXPECT_EQ(0, store_->histograms().size());
-  EXPECT_EQ(0, numTlsHistograms());
-
-  // However, stats created in the two same-named scopes will be the same objects.
-  Counter& counter = scope1->counterFromString("counter");
-  EXPECT_EQ(&counter, &scope2->counterFromString("counter"));
-  Gauge& gauge = scope1->gaugeFromString("gauge", Gauge::ImportMode::Accumulate);
-  EXPECT_EQ(&gauge, &scope2->gaugeFromString("gauge", Gauge::ImportMode::Accumulate));
-  TextReadout& text_readout = scope1->textReadoutFromString("tr");
-  EXPECT_EQ(&text_readout, &scope2->textReadoutFromString("tr"));
-  Histogram& histogram = scope1->histogramFromString("histogram", Histogram::Unit::Unspecified);
-  EXPECT_EQ(&histogram, &scope2->histogramFromString("histogram", Histogram::Unit::Unspecified));
-
-  // The histogram was created in scope1, which can now be destroyed. But the
-  // histogram is kept alive by scope2.
-  EXPECT_CALL(sink_, onHistogramComplete(Ref(histogram), 100));
-  histogram.recordValue(100);
-  EXPECT_EQ(1, store_->histograms().size());
-  EXPECT_EQ(1, numTlsHistograms());
-  scope1.reset();
-  EXPECT_EQ(1, store_->histograms().size());
-  EXPECT_EQ(1, numTlsHistograms());
-  EXPECT_CALL(sink_, onHistogramComplete(Ref(histogram), 200));
-  histogram.recordValue(200);
-  EXPECT_EQ(&histogram, &scope2->histogramFromString("histogram", Histogram::Unit::Unspecified));
-  scope2.reset();
-  EXPECT_EQ(0, store_->histograms().size());
-  EXPECT_EQ(0, numTlsHistograms());
-
-  store_->shutdownThreading();
-
-  store_->histogramFromString("histogram_after_shutdown", Histogram::Unit::Unspecified);
-
   tls_.shutdownThread();
 }
 
@@ -672,7 +587,7 @@ public:
 
   SymbolTablePtr symbol_table_;
   AllocatorImpl alloc_;
-  ThreadLocalStoreImplPtr store_;
+  std::unique_ptr<ThreadLocalStoreImpl> store_;
   StatNamePool pool_;
 };
 
@@ -1165,7 +1080,7 @@ protected:
   MockSink sink_;
   SymbolTablePtr symbol_table_;
   std::unique_ptr<AllocatorImpl> alloc_;
-  ThreadLocalStoreImplPtr store_;
+  std::unique_ptr<ThreadLocalStoreImpl> store_;
   NiceMock<Event::MockDispatcher> main_thread_dispatcher_;
   NiceMock<ThreadLocal::MockInstance> tls_;
   TestUtil::SymbolTableCreatorTestPeer symbol_table_creator_test_peer_;
@@ -1188,7 +1103,7 @@ TEST_F(StatsThreadLocalStoreTestNoFixture, MemoryWithTlsFakeSymbolTable) {
   TestUtil::MemoryTest memory_test;
   TestUtil::forEachSampleStat(
       100, [this](absl::string_view name) { store_->counterFromString(std::string(name)); });
-  EXPECT_MEMORY_EQ(memory_test.consumedBytes(), 1498128); // July 30, 2020
+  EXPECT_MEMORY_EQ(memory_test.consumedBytes(), 1498160); // Apr 8, 2020
   EXPECT_MEMORY_LE(memory_test.consumedBytes(), 1.6 * million_);
 }
 
@@ -1208,7 +1123,7 @@ TEST_F(StatsThreadLocalStoreTestNoFixture, MemoryWithTlsRealSymbolTable) {
   TestUtil::MemoryTest memory_test;
   TestUtil::forEachSampleStat(
       100, [this](absl::string_view name) { store_->counterFromString(std::string(name)); });
-  EXPECT_MEMORY_EQ(memory_test.consumedBytes(), 827632); // July 20, 2020
+  EXPECT_MEMORY_EQ(memory_test.consumedBytes(), 827664); // July 2, 2020
   EXPECT_MEMORY_LE(memory_test.consumedBytes(), 0.9 * million_);
 }
 
@@ -1464,8 +1379,9 @@ TEST_F(HistogramTest, ParentHistogramBucketSummary) {
             parent_histogram->bucketSummary());
 }
 
-class ThreadLocalRealThreadsTestBase : public ThreadLocalStoreNoMocksTestBase {
-protected:
+class ClusterShutdownCleanupStarvationTest : public ThreadLocalStoreNoMocksTestBase {
+public:
+  static constexpr uint32_t NumThreads = 2;
   static constexpr uint32_t NumScopes = 1000;
   static constexpr uint32_t NumIters = 35;
 
@@ -1501,17 +1417,18 @@ protected:
     absl::BlockingCounter blocking_counter_;
   };
 
-  ThreadLocalRealThreadsTestBase(uint32_t num_threads)
-      : num_threads_(num_threads), start_time_(time_system_.monotonicTime()),
-        api_(Api::createApiForTest()), thread_factory_(api_->threadFactory()),
-        pool_(store_->symbolTable()) {
+  ClusterShutdownCleanupStarvationTest()
+      : start_time_(time_system_.monotonicTime()), api_(Api::createApiForTest()),
+        thread_factory_(api_->threadFactory()), pool_(store_->symbolTable()),
+        my_counter_name_(pool_.add("my_counter")),
+        my_counter_scoped_name_(pool_.add("scope.my_counter")) {
     // This is the same order as InstanceImpl::initialize in source/server/server.cc.
-    thread_dispatchers_.resize(num_threads_);
+    thread_dispatchers_.resize(NumThreads);
     {
-      BlockingBarrier blocking_barrier(num_threads_ + 1);
+      BlockingBarrier blocking_barrier(NumThreads + 1);
       main_thread_ = thread_factory_.createThread(
           [this, &blocking_barrier]() { mainThreadFn(blocking_barrier); });
-      for (uint32_t i = 0; i < num_threads_; ++i) {
+      for (uint32_t i = 0; i < NumThreads; ++i) {
         threads_.emplace_back(thread_factory_.createThread(
             [this, i, &blocking_barrier]() { workerThreadFn(i, blocking_barrier); }));
       }
@@ -1531,7 +1448,7 @@ protected:
     }
   }
 
-  ~ThreadLocalRealThreadsTestBase() override {
+  ~ClusterShutdownCleanupStarvationTest() override {
     {
       BlockingBarrier blocking_barrier(1);
       main_dispatcher_->post(blocking_barrier.run([this]() {
@@ -1557,6 +1474,14 @@ protected:
     main_thread_->join();
   }
 
+  void createScopesIncCountersAndCleanup() {
+    for (uint32_t i = 0; i < NumScopes; ++i) {
+      ScopePtr scope = store_->createScope("scope.");
+      Counter& counter = scope->counterFromStatName(my_counter_name_);
+      counter.inc();
+    }
+  }
+
   void workerThreadFn(uint32_t thread_index, BlockingBarrier& blocking_barrier) {
     thread_dispatchers_[thread_index] =
         api_->allocateDispatcher(absl::StrCat("test_worker_", thread_index));
@@ -1568,49 +1493,6 @@ protected:
     main_dispatcher_ = api_->allocateDispatcher("test_main_thread");
     blocking_barrier.decrementCount();
     main_dispatcher_->run(Event::Dispatcher::RunType::RunUntilExit);
-  }
-
-  void mainDispatchBlock() {
-    // To ensure all stats are freed we have to wait for a few posts() to clear.
-    // First, wait for the main-dispatcher to initiate the cross-thread TLS cleanup.
-    BlockingBarrier blocking_barrier(1);
-    main_dispatcher_->post(blocking_barrier.run([]() {}));
-  }
-
-  void tlsBlock() {
-    BlockingBarrier blocking_barrier(num_threads_);
-    for (Event::DispatcherPtr& thread_dispatcher : thread_dispatchers_) {
-      thread_dispatcher->post(blocking_barrier.run([]() {}));
-    }
-  }
-
-  const uint32_t num_threads_;
-  Event::TestRealTimeSystem time_system_;
-  MonotonicTime start_time_;
-  Api::ApiPtr api_;
-  Event::DispatcherPtr main_dispatcher_;
-  std::vector<Event::DispatcherPtr> thread_dispatchers_;
-  Thread::ThreadFactory& thread_factory_;
-  ThreadLocal::InstanceImplPtr tls_;
-  Thread::ThreadPtr main_thread_;
-  std::vector<Thread::ThreadPtr> threads_;
-  StatNamePool pool_;
-};
-
-class ClusterShutdownCleanupStarvationTest : public ThreadLocalRealThreadsTestBase {
-protected:
-  static constexpr uint32_t NumThreads = 2;
-
-  ClusterShutdownCleanupStarvationTest()
-      : ThreadLocalRealThreadsTestBase(NumThreads), my_counter_name_(pool_.add("my_counter")),
-        my_counter_scoped_name_(pool_.add("scope.my_counter")) {}
-
-  void createScopesIncCountersAndCleanup() {
-    for (uint32_t i = 0; i < NumScopes; ++i) {
-      ScopePtr scope = store_->createScope("scope.");
-      Counter& counter = scope->counterFromStatName(my_counter_name_);
-      counter.inc();
-    }
   }
 
   void createScopesIncCountersAndCleanupAllThreads() {
@@ -1626,6 +1508,16 @@ protected:
                                                             start_time_);
   }
 
+  Event::TestRealTimeSystem time_system_;
+  MonotonicTime start_time_;
+  Api::ApiPtr api_;
+  Event::DispatcherPtr main_dispatcher_;
+  std::vector<Event::DispatcherPtr> thread_dispatchers_;
+  Thread::ThreadFactory& thread_factory_;
+  std::unique_ptr<ThreadLocal::InstanceImpl> tls_;
+  Thread::ThreadPtr main_thread_;
+  std::vector<Thread::ThreadPtr> threads_;
+  StatNamePool pool_;
   StatName my_counter_name_;
   StatName my_counter_scoped_name_;
 };
@@ -1638,14 +1530,24 @@ TEST_F(ClusterShutdownCleanupStarvationTest, TwelveThreadsWithBlockade) {
   for (uint32_t i = 0; i < NumIters && elapsedTime() < std::chrono::seconds(5); ++i) {
     createScopesIncCountersAndCleanupAllThreads();
 
+    // To ensure all stats are freed we have to wait for a few posts() to clear.
     // First, wait for the main-dispatcher to initiate the cross-thread TLS cleanup.
-    mainDispatchBlock();
+    auto main_dispatch_block = [this]() {
+      BlockingBarrier blocking_barrier(1);
+      main_dispatcher_->post(blocking_barrier.run([]() {}));
+    };
+    main_dispatch_block();
 
     // Next, wait for all the worker threads to complete their TLS cleanup.
-    tlsBlock();
+    {
+      BlockingBarrier blocking_barrier(NumThreads);
+      for (Event::DispatcherPtr& thread_dispatcher : thread_dispatchers_) {
+        thread_dispatcher->post(blocking_barrier.run([]() {}));
+      }
+    }
 
     // Finally, wait for the final central-cache cleanup, which occurs on the main thread.
-    mainDispatchBlock();
+    main_dispatch_block();
 
     // Here we show that the counter cleanups have finished, because the use-count is 1.
     CounterSharedPtr counter =
@@ -1680,125 +1582,6 @@ TEST_F(ClusterShutdownCleanupStarvationTest, TwelveThreadsWithoutBlockade) {
   }
   EXPECT_EQ(70000, NumThreads * NumScopes * NumIters);
   store_->sync().signal(ThreadLocalStoreImpl::MainDispatcherCleanupSync);
-}
-
-class HistogramThreadTest : public ThreadLocalRealThreadsTestBase {
-protected:
-  static constexpr uint32_t NumThreads = 10;
-
-  HistogramThreadTest() : ThreadLocalRealThreadsTestBase(NumThreads) {}
-
-  void mergeHistograms() {
-    BlockingBarrier blocking_barrier(1);
-    main_dispatcher_->post([this, &blocking_barrier]() {
-      store_->mergeHistograms(blocking_barrier.decrementCountFn());
-    });
-  }
-
-  uint32_t numTlsHistograms() {
-    uint32_t num;
-    {
-      BlockingBarrier blocking_barrier(1);
-      main_dispatcher_->post([this, &num, &blocking_barrier]() {
-        ThreadLocalStoreTestingPeer::numTlsHistograms(*store_,
-                                                      [&num, &blocking_barrier](uint32_t num_hist) {
-                                                        num = num_hist;
-                                                        blocking_barrier.decrementCount();
-                                                      });
-      });
-    }
-    return num;
-  }
-
-  // Executes a function on every worker thread dispatcher.
-  void foreachThread(const std::function<void()>& fn) {
-    BlockingBarrier blocking_barrier(NumThreads);
-    for (Event::DispatcherPtr& thread_dispatcher : thread_dispatchers_) {
-      thread_dispatcher->post(blocking_barrier.run(fn));
-    }
-  }
-};
-
-TEST_F(HistogramThreadTest, MakeHistogramsAndRecordValues) {
-  foreachThread([this]() {
-    Histogram& histogram =
-        store_->histogramFromString("my_hist", Stats::Histogram::Unit::Unspecified);
-    histogram.recordValue(42);
-  });
-
-  mergeHistograms();
-
-  auto histograms = store_->histograms();
-  ASSERT_EQ(1, histograms.size());
-  ParentHistogramSharedPtr hist = histograms[0];
-  EXPECT_THAT(hist->bucketSummary(),
-              HasSubstr(absl::StrCat(" B25(0,0) B50(", NumThreads, ",", NumThreads, ") ")));
-}
-
-TEST_F(HistogramThreadTest, ScopeOverlap) {
-  // Creating two scopes with the same name gets you two distinct scope objects.
-  ScopePtr scope1 = store_->createScope("scope.");
-  ScopePtr scope2 = store_->createScope("scope.");
-  EXPECT_NE(scope1, scope2);
-
-  EXPECT_EQ(0, store_->histograms().size());
-  EXPECT_EQ(0, numTlsHistograms());
-
-  // Histograms created in the two same-named scopes will be the same objects.
-  foreachThread([&scope1, &scope2]() {
-    Histogram& histogram = scope1->histogramFromString("histogram", Histogram::Unit::Unspecified);
-    EXPECT_EQ(&histogram, &scope2->histogramFromString("histogram", Histogram::Unit::Unspecified));
-    histogram.recordValue(100);
-  });
-
-  mergeHistograms();
-
-  // Verify that we have the expected number of TLS histograms since we accessed
-  // the histogram on every thread.
-  std::vector<ParentHistogramSharedPtr> histograms = store_->histograms();
-  ASSERT_EQ(1, histograms.size());
-  EXPECT_EQ(NumThreads, numTlsHistograms());
-
-  // There's no convenient API to pull data out of the histogram, except as
-  // a string. This expectation captures the bucket transition to indicate
-  // 0 samples at less than 100, and 10 between 100 and 249 inclusive.
-  EXPECT_THAT(histograms[0]->bucketSummary(),
-              HasSubstr(absl::StrCat(" B100(0,0) B250(", NumThreads, ",", NumThreads, ") ")));
-
-  // The histogram was created in scope1, which can now be destroyed. But the
-  // histogram is kept alive by scope2.
-  scope1.reset();
-  histograms = store_->histograms();
-  EXPECT_EQ(1, histograms.size());
-  EXPECT_EQ(NumThreads, numTlsHistograms());
-
-  // We can continue to accumulate samples at the scope2's view of the same
-  // histogram, and they will combine with the existing data, despite the
-  // fact that scope1 has been deleted.
-  foreachThread([&scope2]() {
-    Histogram& histogram = scope2->histogramFromString("histogram", Histogram::Unit::Unspecified);
-    histogram.recordValue(300);
-  });
-
-  mergeHistograms();
-
-  // Shows the bucket summary with 10 samples at >=100, and 20 at >=250.
-  EXPECT_THAT(histograms[0]->bucketSummary(),
-              HasSubstr(absl::StrCat(" B100(0,0) B250(0,", NumThreads, ") B500(", NumThreads, ",",
-                                     2 * NumThreads, ") ")));
-
-  // Now clear everything, and synchronize the system by calling mergeHistograms().
-  // THere should be no more ParentHistograms or TlsHistograms.
-  scope2.reset();
-  histograms.clear();
-  mergeHistograms();
-
-  EXPECT_EQ(0, store_->histograms().size());
-  EXPECT_EQ(0, numTlsHistograms());
-
-  store_->shutdownThreading();
-
-  store_->histogramFromString("histogram_after_shutdown", Histogram::Unit::Unspecified);
 }
 
 } // namespace Stats

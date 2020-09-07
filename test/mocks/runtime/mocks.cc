@@ -4,7 +4,6 @@
 #include "gtest/gtest.h"
 
 using testing::_;
-using testing::NiceMock;
 using testing::Return;
 using testing::ReturnArg;
 
@@ -21,9 +20,6 @@ MockSnapshot::MockSnapshot() {
 MockSnapshot::~MockSnapshot() = default;
 
 MockLoader::MockLoader() {
-  ON_CALL(*this, threadsafeSnapshot()).WillByDefault(testing::Invoke([]() {
-    return std::make_shared<const NiceMock<MockSnapshot>>();
-  }));
   ON_CALL(*this, snapshot()).WillByDefault(ReturnRef(snapshot_));
   ON_CALL(*this, getRootScope()).WillByDefault(ReturnRef(store_));
 }

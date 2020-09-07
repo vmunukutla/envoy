@@ -92,10 +92,12 @@ LookupContextPtr SimpleHttpCache::makeLookupContext(LookupRequest&& request) {
   return std::make_unique<SimpleLookupContext>(*this, std::move(request));
 }
 
-void SimpleHttpCache::updateHeaders(const LookupContext&, const Http::ResponseHeaderMap&) {
+void SimpleHttpCache::updateHeaders(LookupContextPtr&& lookup_context,
+                                    Http::ResponseHeaderMapPtr&& response_headers) {
+  ASSERT(lookup_context);
+  ASSERT(response_headers);
   // TODO(toddmgreer): Support updating headers.
-  // Not implemented yet, however this is called during tests
-  // NOT_IMPLEMENTED_GCOVR_EXCL_LINE;
+  NOT_IMPLEMENTED_GCOVR_EXCL_LINE;
 }
 
 SimpleHttpCache::Entry SimpleHttpCache::lookup(const LookupRequest& request) {

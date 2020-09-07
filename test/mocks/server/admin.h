@@ -31,7 +31,6 @@ public:
               (absl::string_view path_and_query, absl::string_view method,
                Http::ResponseHeaderMap& response_headers, std::string& body));
   MOCK_METHOD(void, addListenerToHandler, (Network::ConnectionHandler * handler));
-  MOCK_METHOD(uint32_t, concurrency, (), (const));
 
   ::testing::NiceMock<MockConfigTracker> config_tracker_;
 };

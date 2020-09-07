@@ -14,11 +14,6 @@ namespace Extensions {
 namespace HttpFilters {
 namespace Cors {
 
-struct HttpResponseCodeDetailValues {
-  const absl::string_view CorsResponse = "cors_response";
-};
-using HttpResponseCodeDetails = ConstSingleton<HttpResponseCodeDetailValues>;
-
 Http::RegisterCustomInlineHeader<Http::CustomInlineHeaderRegistry::Type::RequestHeaders>
     access_control_request_method_handle(Http::CustomHeaders::get().AccessControlRequestMethod);
 Http::RegisterCustomInlineHeader<Http::CustomInlineHeaderRegistry::Type::RequestHeaders>
@@ -109,8 +104,6 @@ Http::FilterHeadersStatus CorsFilter::decodeHeaders(Http::RequestHeaderMap& head
     response_headers->setInline(access_control_max_age_handle.handle(), maxAge());
   }
 
-  decoder_callbacks_->streamInfo().setResponseCodeDetails(
-      HttpResponseCodeDetails::get().CorsResponse);
   decoder_callbacks_->encodeHeaders(std::move(response_headers), true);
 
   return Http::FilterHeadersStatus::StopIteration;

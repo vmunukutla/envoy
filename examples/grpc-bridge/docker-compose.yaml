@@ -17,9 +17,10 @@ services:
           - kv-backend-service
 
   grpc-server-proxy:
-    build:
-      context: .
-      dockerfile: Dockerfile-server
+    image: envoyproxy/envoy:latest
+    command: /usr/local/bin/envoy -c /etc/server-envoy-proxy.yaml --service-cluster backend-proxy
+    volumes:
+      - ./server/envoy-proxy.yaml:/etc/server-envoy-proxy.yaml
     networks:
       envoymesh:
         aliases:
@@ -44,9 +45,10 @@ services:
           - grpc-client
 
   grpc-client-proxy:
-    build:
-      context: .
-      dockerfile: Dockerfile-client
+    image: envoyproxy/envoy:latest
+    command: /usr/local/bin/envoy -c /etc/client-envoy-proxy.yaml
+    volumes:
+      - ./client/envoy-proxy.yaml:/etc/client-envoy-proxy.yaml
     networks:
       envoymesh:
         aliases:

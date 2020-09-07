@@ -1,10 +1,7 @@
 #pragma once
 
 #include "envoy/server/filter_config.h"
-#include "envoy/server/transport_socket_config.h"
 #include "envoy/upstream/upstream.h"
-
-#include "common/common/utility.h"
 
 namespace Envoy {
 namespace Extensions {
@@ -34,12 +31,11 @@ public:
     return std::make_unique<ProtocolOptionsProto>();
   }
 
-  Upstream::ProtocolOptionsConfigConstSharedPtr createProtocolOptionsConfig(
-      const Protobuf::Message& proto_config,
-      Server::Configuration::ProtocolOptionsFactoryContext& factory_context) override {
+  Upstream::ProtocolOptionsConfigConstSharedPtr
+  createProtocolOptionsConfig(const Protobuf::Message& proto_config,
+                              ProtobufMessage::ValidationVisitor& validation_visitor) override {
     return createProtocolOptionsTyped(MessageUtil::downcastAndValidate<const ProtocolOptionsProto&>(
-                                          proto_config, factory_context.messageValidationVisitor()),
-                                      factory_context);
+        proto_config, validation_visitor));
   }
 
   std::string name() const override { return name_; }
@@ -56,10 +52,8 @@ private:
                                     Server::Configuration::FactoryContext& context) PURE;
 
   virtual Upstream::ProtocolOptionsConfigConstSharedPtr
-  createProtocolOptionsTyped(const ProtocolOptionsProto&,
-                             Server::Configuration::ProtocolOptionsFactoryContext&) {
-    ExceptionUtil::throwEnvoyException(
-        fmt::format("filter {} does not support protocol options", name_));
+  createProtocolOptionsTyped(const ProtocolOptionsProto&) {
+    throw EnvoyException(fmt::format("filter {} does not support protocol options", name_));
   }
 
   const std::string name_;

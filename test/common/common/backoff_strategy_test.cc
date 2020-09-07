@@ -9,20 +9,20 @@ using testing::Return;
 
 namespace Envoy {
 
-TEST(ExponentialBackOffStrategyTest, JitteredBackOffBasicFlow) {
+TEST(BackOffStrategyTest, JitteredBackOffBasicFlow) {
   NiceMock<Random::MockRandomGenerator> random;
   ON_CALL(random, random()).WillByDefault(Return(27));
 
-  JitteredExponentialBackOffStrategy jittered_back_off(25, 30, random);
+  JitteredBackOffStrategy jittered_back_off(25, 30, random);
   EXPECT_EQ(2, jittered_back_off.nextBackOffMs());
   EXPECT_EQ(27, jittered_back_off.nextBackOffMs());
 }
 
-TEST(ExponentialBackOffStrategyTest, JitteredBackOffBasicReset) {
+TEST(BackOffStrategyTest, JitteredBackOffBasicReset) {
   NiceMock<Random::MockRandomGenerator> random;
   ON_CALL(random, random()).WillByDefault(Return(27));
 
-  JitteredExponentialBackOffStrategy jittered_back_off(25, 30, random);
+  JitteredBackOffStrategy jittered_back_off(25, 30, random);
   EXPECT_EQ(2, jittered_back_off.nextBackOffMs());
   EXPECT_EQ(27, jittered_back_off.nextBackOffMs());
 
@@ -30,23 +30,22 @@ TEST(ExponentialBackOffStrategyTest, JitteredBackOffBasicReset) {
   EXPECT_EQ(2, jittered_back_off.nextBackOffMs()); // Should start from start
 }
 
-TEST(ExponentialBackOffStrategyTest, JitteredBackOffDoesntOverflow) {
+TEST(BackOffStrategyTest, JitteredBackOffDoesntOverflow) {
   NiceMock<Random::MockRandomGenerator> random;
   ON_CALL(random, random()).WillByDefault(Return(std::numeric_limits<uint64_t>::max() - 1));
 
-  JitteredExponentialBackOffStrategy jittered_back_off(1, std::numeric_limits<uint64_t>::max(),
-                                                       random);
+  JitteredBackOffStrategy jittered_back_off(1, std::numeric_limits<uint64_t>::max(), random);
   for (int iter = 0; iter < 100; ++iter) {
     EXPECT_GE(std::numeric_limits<uint64_t>::max(), jittered_back_off.nextBackOffMs());
   }
   EXPECT_EQ(std::numeric_limits<uint64_t>::max() - 1, jittered_back_off.nextBackOffMs());
 }
 
-TEST(ExponentialBackOffStrategyTest, JitteredBackOffWithMaxInterval) {
+TEST(BackOffStrategyTest, JitteredBackOffWithMaxInterval) {
   NiceMock<Random::MockRandomGenerator> random;
   ON_CALL(random, random()).WillByDefault(Return(9999));
 
-  JitteredExponentialBackOffStrategy jittered_back_off(5, 100, random);
+  JitteredBackOffStrategy jittered_back_off(5, 100, random);
   EXPECT_EQ(4, jittered_back_off.nextBackOffMs());
   EXPECT_EQ(9, jittered_back_off.nextBackOffMs());
   EXPECT_EQ(19, jittered_back_off.nextBackOffMs());
@@ -56,11 +55,11 @@ TEST(ExponentialBackOffStrategyTest, JitteredBackOffWithMaxInterval) {
   EXPECT_EQ(99, jittered_back_off.nextBackOffMs());
 }
 
-TEST(ExponentialBackOffStrategyTest, JitteredBackOffWithMaxIntervalReset) {
+TEST(BackOffStrategyTest, JitteredBackOffWithMaxIntervalReset) {
   NiceMock<Random::MockRandomGenerator> random;
   ON_CALL(random, random()).WillByDefault(Return(9999));
 
-  JitteredExponentialBackOffStrategy jittered_back_off(5, 100, random);
+  JitteredBackOffStrategy jittered_back_off(5, 100, random);
   EXPECT_EQ(4, jittered_back_off.nextBackOffMs());
   EXPECT_EQ(9, jittered_back_off.nextBackOffMs());
   EXPECT_EQ(19, jittered_back_off.nextBackOffMs());
@@ -79,23 +78,7 @@ TEST(ExponentialBackOffStrategyTest, JitteredBackOffWithMaxIntervalReset) {
   EXPECT_EQ(99, jittered_back_off.nextBackOffMs());
 }
 
-TEST(LowerBoundBackOffStrategyTest, JitteredBackOffWithLowRandomValue) {
-  NiceMock<Random::MockRandomGenerator> random;
-  ON_CALL(random, random()).WillByDefault(Return(22));
-
-  JitteredLowerBoundBackOffStrategy jittered_lower_bound_back_off(500, random);
-  EXPECT_EQ(522, jittered_lower_bound_back_off.nextBackOffMs());
-}
-
-TEST(LowerBoundBackOffStrategyTest, JitteredBackOffWithHighRandomValue) {
-  NiceMock<Random::MockRandomGenerator> random;
-  ON_CALL(random, random()).WillByDefault(Return(9999));
-
-  JitteredLowerBoundBackOffStrategy jittered_lower_bound_back_off(500, random);
-  EXPECT_EQ(749, jittered_lower_bound_back_off.nextBackOffMs());
-}
-
-TEST(FixedBackOffStrategyTest, FixedBackOffBasicReset) {
+TEST(BackOffStrategyTest, FixedBackOffBasicReset) {
   FixedBackOffStrategy fixed_back_off(30);
   EXPECT_EQ(30, fixed_back_off.nextBackOffMs());
   EXPECT_EQ(30, fixed_back_off.nextBackOffMs());

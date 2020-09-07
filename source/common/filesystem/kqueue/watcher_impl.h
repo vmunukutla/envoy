@@ -11,8 +11,6 @@
 #include "common/common/linked_object.h"
 #include "common/common/logger.h"
 
-#include "absl/container/node_hash_map.h"
-
 namespace Envoy {
 namespace Filesystem {
 
@@ -49,7 +47,7 @@ private:
 
   Api::Api& api_;
   int queue_;
-  absl::node_hash_map<int, FileWatchPtr> watches_;
+  std::unordered_map<int, FileWatchPtr> watches_;
   Event::FileEventPtr kqueue_event_;
 };
 

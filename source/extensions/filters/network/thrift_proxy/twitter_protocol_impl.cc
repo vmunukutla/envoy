@@ -8,8 +8,6 @@
 #include "extensions/filters/network/thrift_proxy/thrift_object_impl.h"
 #include "extensions/filters/network/thrift_proxy/unframed_transport_impl.h"
 
-#include "absl/strings/str_replace.h"
-
 namespace Envoy {
 namespace Extensions {
 namespace NetworkFilters {
@@ -386,24 +384,28 @@ public:
       sampled_ = metadata.sampled().value();
     }
 
-    metadata.headers().iterate([this](const Http::HeaderEntry& header) -> Http::HeaderMap::Iterate {
-      absl::string_view key = header.key().getStringView();
-      if (key.empty()) {
-        return Http::HeaderMap::Iterate::Continue;
-      }
+    metadata.headers().iterate(
+        [](const Http::HeaderEntry& header, void* cb) -> Http::HeaderMap::Iterate {
+          absl::string_view key = header.key().getStringView();
+          if (key.empty()) {
+            return Http::HeaderMap::Iterate::Continue;
+          }
 
-      if (key == Headers::get().ClientId.get()) {
-        client_id_ = ClientId(std::string(header.value().getStringView()));
-      } else if (key == Headers::get().Dest.get()) {
-        dest_ = std::string(header.value().getStringView());
-      } else if (key.find(":d:") == 0 && key.size() > 3) {
-        delegations_.emplace_back(std::string(key.substr(3)),
-                                  std::string(header.value().getStringView()));
-      } else if (key[0] != ':') {
-        contexts_.emplace_back(std::string(key), std::string(header.value().getStringView()));
-      }
-      return Http::HeaderMap::Iterate::Continue;
-    });
+          RequestHeader& rh = *static_cast<RequestHeader*>(cb);
+          if (key == Headers::get().ClientId.get()) {
+            rh.client_id_ = ClientId(std::string(header.value().getStringView()));
+          } else if (key == Headers::get().Dest.get()) {
+            rh.dest_ = std::string(header.value().getStringView());
+          } else if (key.find(":d:") == 0 && key.size() > 3) {
+            rh.delegations_.emplace_back(std::string(key.substr(3)),
+                                         std::string(header.value().getStringView()));
+          } else if (key[0] != ':') {
+            rh.contexts_.emplace_back(std::string(key),
+                                      std::string(header.value().getStringView()));
+          }
+          return Http::HeaderMap::Iterate::Continue;
+        },
+        this);
   }
 
   void write(Buffer::Instance& buffer) {
@@ -573,13 +575,16 @@ public:
     }
   }
   ResponseHeader(const MessageMetadata& metadata) : spans_(metadata.spans()) {
-    metadata.headers().iterate([this](const Http::HeaderEntry& header) -> Http::HeaderMap::Iterate {
-      absl::string_view key = header.key().getStringView();
-      if (!key.empty() && key[0] != ':') {
-        contexts_.emplace_back(std::string(key), std::string(header.value().getStringView()));
-      }
-      return Http::HeaderMap::Iterate::Continue;
-    });
+    metadata.headers().iterate(
+        [](const Http::HeaderEntry& header, void* cb) -> Http::HeaderMap::Iterate {
+          absl::string_view key = header.key().getStringView();
+          if (!key.empty() && key[0] != ':') {
+            static_cast<std::list<RequestContext>*>(cb)->emplace_back(
+                std::string(key), std::string(header.value().getStringView()));
+          }
+          return Http::HeaderMap::Iterate::Continue;
+        },
+        &contexts_);
   }
 
   void write(Buffer::Instance& buffer) {
@@ -1024,10 +1029,7 @@ void TwitterProtocolImpl::updateMetadataWithRequestHeader(const ThriftObject& he
     metadata.setFlags(*req_header.flags());
   }
   for (const auto& context : *req_header.contexts()) {
-    // LowerCaseString doesn't allow '\0', '\n', and '\r'.
-    const std::string key =
-        absl::StrReplaceAll(context.key_, {{std::string(1, '\0'), ""}, {"\n", ""}, {"\r", ""}});
-    headers.addCopy(Http::LowerCaseString{key}, context.value_);
+    headers.addCopy(Http::LowerCaseString{context.key_}, context.value_);
   }
   if (req_header.dest()) {
     headers.addReferenceKey(Headers::get().Dest, *req_header.dest());
@@ -1035,10 +1037,7 @@ void TwitterProtocolImpl::updateMetadataWithRequestHeader(const ThriftObject& he
   // TODO(zuercher): Delegations are stored as headers for now. Consider passing them as simple
   // objects
   for (const auto& delegation : *req_header.delegations()) {
-    // LowerCaseString doesn't allow '\0', '\n', and '\r'.
-    const std::string src =
-        absl::StrReplaceAll(delegation.src_, {{std::string(1, '\0'), ""}, {"\n", ""}, {"\r", ""}});
-    const std::string key = fmt::format(":d:{}", src);
+    std::string key = fmt::format(":d:{}", delegation.src_);
     headers.addCopy(Http::LowerCaseString{key}, delegation.dst_);
   }
   if (req_header.traceIdHigh()) {
@@ -1058,14 +1057,11 @@ void TwitterProtocolImpl::updateMetadataWithResponseHeader(const ThriftObject& h
 
   Http::HeaderMap& headers = metadata.headers();
   for (const auto& context : resp_header.contexts()) {
-    // LowerCaseString doesn't allow '\0', '\n', and '\r'.
-    const std::string key =
-        absl::StrReplaceAll(context.key_, {{std::string(1, '\0'), ""}, {"\n", ""}, {"\r", ""}});
-    headers.addCopy(Http::LowerCaseString(key), context.value_);
+    headers.addCopy(Http::LowerCaseString(context.key_), context.value_);
   }
 
   SpanList& spans = resp_header.spans();
-  std::copy(spans.begin(), spans.end(), std::back_inserter(metadata.mutableSpans()));
+  std::copy(spans.begin(), spans.end(), std::back_inserter(metadata.mutable_spans()));
 }
 
 void TwitterProtocolImpl::writeResponseHeader(Buffer::Instance& buffer,

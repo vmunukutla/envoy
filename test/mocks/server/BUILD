@@ -197,7 +197,6 @@ envoy_cc_mock(
     deps = [
         "//include/envoy/server:configuration_interface",
         "//include/envoy/server:overload_manager_interface",
-        "//test/test_common:utility_lib",
     ],
 )
 

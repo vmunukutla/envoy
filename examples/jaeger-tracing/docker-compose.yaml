@@ -3,8 +3,10 @@ services:
 
   front-envoy:
     build:
-      context: .
-      dockerfile: Dockerfile-frontenvoy
+      context: ../
+      dockerfile: front-proxy/Dockerfile-frontenvoy
+    volumes:
+      - ./front-envoy-jaeger.yaml:/etc/front-envoy.yaml
     networks:
       - envoymesh
     expose:

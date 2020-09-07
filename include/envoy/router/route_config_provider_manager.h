@@ -1,6 +1,5 @@
 #pragma once
 
-#include <memory>
 #include <string>
 
 #include "envoy/config/route/v3/route.pb.h"
@@ -55,9 +54,6 @@ public:
                                   Server::Configuration::ServerFactoryContext& factory_context,
                                   ProtobufMessage::ValidationVisitor& validator) PURE;
 };
-
-using RouteConfigProviderManagerPtr = std::unique_ptr<RouteConfigProviderManager>;
-using RouteConfigProviderManagerSharedPtr = std::shared_ptr<RouteConfigProviderManager>;
 
 } // namespace Router
 } // namespace Envoy

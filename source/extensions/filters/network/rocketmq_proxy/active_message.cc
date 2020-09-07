@@ -134,7 +134,7 @@ void ActiveMessage::fillBrokerData(std::vector<BrokerData>& list, const std::str
   }
 
   if (!found) {
-    absl::node_hash_map<int64_t, std::string> addresses;
+    std::unordered_map<int64_t, std::string> addresses;
     addresses.emplace(broker_id, address);
 
     list.emplace_back(BrokerData(cluster, broker_name, std::move(addresses)));

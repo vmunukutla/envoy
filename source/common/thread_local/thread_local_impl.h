@@ -3,7 +3,6 @@
 #include <atomic>
 #include <cstdint>
 #include <list>
-#include <memory>
 #include <vector>
 
 #include "envoy/thread_local/thread_local.h"
@@ -51,12 +50,10 @@ private:
     const uint64_t index_;
   };
 
-  using SlotImplPtr = std::unique_ptr<SlotImpl>;
-
   // A Wrapper of SlotImpl which on destruction returns the SlotImpl to the deferred delete queue
   // (detaches it).
   struct Bookkeeper : public Slot {
-    Bookkeeper(InstanceImpl& parent, SlotImplPtr&& slot);
+    Bookkeeper(InstanceImpl& parent, std::unique_ptr<SlotImpl>&& slot);
     ~Bookkeeper() override { parent_.recycle(std::move(slot_)); }
 
     // ThreadLocal::Slot
@@ -69,7 +66,7 @@ private:
     void set(InitializeCb cb) override;
 
     InstanceImpl& parent_;
-    SlotImplPtr slot_;
+    std::unique_ptr<SlotImpl> slot_;
     std::shared_ptr<uint32_t> ref_count_;
   };
 
@@ -78,7 +75,7 @@ private:
     std::vector<ThreadLocalObjectSharedPtr> data_;
   };
 
-  void recycle(SlotImplPtr&& slot);
+  void recycle(std::unique_ptr<SlotImpl>&& slot);
   // Cleanup the deferred deletes queue.
   void scheduleCleanup(SlotImpl* slot);
 
@@ -92,7 +89,7 @@ private:
   // A indexed container for Slots that has to be deferred to delete due to out-going callbacks
   // pointing to the Slot. To let the ref_count_ deleter find the SlotImpl by address, the container
   // is defined as a map of SlotImpl address to the unique_ptr<SlotImpl>.
-  absl::flat_hash_map<SlotImpl*, SlotImplPtr> deferred_deletes_;
+  absl::flat_hash_map<SlotImpl*, std::unique_ptr<SlotImpl>> deferred_deletes_;
 
   std::vector<SlotImpl*> slots_;
   // A list of index of freed slots.
@@ -106,8 +103,6 @@ private:
   // Test only.
   friend class ThreadLocalInstanceImplTest;
 };
-
-using InstanceImplPtr = std::unique_ptr<InstanceImpl>;
 
 } // namespace ThreadLocal
 } // namespace Envoy

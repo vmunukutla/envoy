@@ -1,6 +1,7 @@
 load("@rules_cc//cc:defs.bzl", "cc_binary", "cc_library", "cc_test")
 
 _clang_tools_copts = [
+    "-std=c++14",
     "-fno-exceptions",
     "-fno-rtti",
 ]

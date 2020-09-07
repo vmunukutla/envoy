@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <unordered_map>
 
 #include "envoy/buffer/buffer.h"
 #include "envoy/config/typed_config.h"

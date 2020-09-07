@@ -5,6 +5,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile-frontenvoy
+    volumes:
+      - ./front-envoy.yaml:/etc/front-envoy.yaml
     networks:
       - envoymesh
     expose:

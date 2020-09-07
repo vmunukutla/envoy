@@ -72,7 +72,7 @@ public:
   Api::ApiPtr api_;
   Event::DispatcherPtr dispatcher_;
   Stats::ScopeSharedPtr scope_;
-  GoogleAsyncClientThreadLocalPtr tls_;
+  std::unique_ptr<GoogleAsyncClientThreadLocal> tls_;
   MockStubFactory stub_factory_;
   const Protobuf::MethodDescriptor* method_descriptor_;
   StatNames stat_names_;

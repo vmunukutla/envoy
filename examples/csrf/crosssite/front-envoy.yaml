@@ -15,7 +15,7 @@ static_resources:
             - name: envoy.access_loggers.file
               typed_config:
                 "@type": type.googleapis.com/envoy.config.accesslog.v2.FileAccessLog
-                path: "/dev/stdout"
+                path: "/var/log/access.log"
           route_config:
             name: local_route
             virtual_hosts:

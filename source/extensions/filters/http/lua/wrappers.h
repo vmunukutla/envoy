@@ -7,7 +7,6 @@
 
 #include "extensions/common/crypto/crypto_impl.h"
 #include "extensions/filters/common/lua/lua.h"
-#include "extensions/filters/common/lua/wrappers.h"
 
 #include "openssl/evp.h"
 
@@ -182,9 +181,7 @@ class StreamInfoWrapper : public Filters::Common::Lua::BaseLuaObject<StreamInfoW
 public:
   StreamInfoWrapper(StreamInfo::StreamInfo& stream_info) : stream_info_{stream_info} {}
   static ExportedFunctions exportedFunctions() {
-    return {{"protocol", static_luaProtocol},
-            {"dynamicMetadata", static_luaDynamicMetadata},
-            {"downstreamSslConnection", static_luaDownstreamSslConnection}};
+    return {{"protocol", static_luaProtocol}, {"dynamicMetadata", static_luaDynamicMetadata}};
   }
 
 private:
@@ -200,39 +197,31 @@ private:
    */
   DECLARE_LUA_FUNCTION(StreamInfoWrapper, luaDynamicMetadata);
 
-  /**
-   * Get reference to stream info downstreamSslConnection.
-   * @return SslConnectionWrapper representation of StreamInfo downstream SSL connection.
-   */
-  DECLARE_LUA_FUNCTION(StreamInfoWrapper, luaDownstreamSslConnection);
-
   // Envoy::Lua::BaseLuaObject
   void onMarkDead() override { dynamic_metadata_wrapper_.reset(); }
 
   StreamInfo::StreamInfo& stream_info_;
   Filters::Common::Lua::LuaDeathRef<DynamicMetadataMapWrapper> dynamic_metadata_wrapper_;
-  Filters::Common::Lua::LuaDeathRef<Filters::Common::Lua::SslConnectionWrapper>
-      downstream_ssl_connection_;
 
   friend class DynamicMetadataMapWrapper;
 };
 
 /**
- * Lua wrapper for key for accessing the imported public keys.
+ * Lua wrapper for EVP_PKEY.
  */
 class PublicKeyWrapper : public Filters::Common::Lua::BaseLuaObject<PublicKeyWrapper> {
 public:
-  explicit PublicKeyWrapper(absl::string_view key) : public_key_(key) {}
+  PublicKeyWrapper(Envoy::Common::Crypto::CryptoObjectPtr key) : public_key_(std::move(key)) {}
   static ExportedFunctions exportedFunctions() { return {{"get", static_luaGet}}; }
 
 private:
   /**
-   * Get public key value.
-   * @return public key value or nil if key is empty.
+   * Get a pointer to public key.
+   * @return pointer to public key.
    */
   DECLARE_LUA_FUNCTION(PublicKeyWrapper, luaGet);
 
-  const std::string public_key_;
+  Envoy::Common::Crypto::CryptoObjectPtr public_key_;
 };
 
 } // namespace Lua

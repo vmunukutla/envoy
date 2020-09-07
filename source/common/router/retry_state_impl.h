@@ -29,8 +29,7 @@ public:
                               Http::RequestHeaderMap& request_headers,
                               const Upstream::ClusterInfo& cluster, const VirtualCluster* vcluster,
                               Runtime::Loader& runtime, Random::RandomGenerator& random,
-                              Event::Dispatcher& dispatcher, TimeSource& time_source,
-                              Upstream::ResourcePriority priority);
+                              Event::Dispatcher& dispatcher, Upstream::ResourcePriority priority);
   ~RetryStateImpl() override;
 
   /**
@@ -53,8 +52,6 @@ public:
 
   // Router::RetryState
   bool enabled() override { return retry_on_ != 0; }
-  absl::optional<std::chrono::milliseconds>
-  parseResetInterval(const Http::ResponseHeaderMap& response_headers) const override;
   RetryStatus shouldRetryHeaders(const Http::ResponseHeaderMap& response_headers,
                                  DoRetryCallback callback) override;
   // Returns true if the retry policy would retry the passed headers. Does not
@@ -95,8 +92,7 @@ private:
   RetryStateImpl(const RetryPolicy& route_policy, Http::RequestHeaderMap& request_headers,
                  const Upstream::ClusterInfo& cluster, const VirtualCluster* vcluster,
                  Runtime::Loader& runtime, Random::RandomGenerator& random,
-                 Event::Dispatcher& dispatcher, TimeSource& time_source,
-                 Upstream::ResourcePriority priority);
+                 Event::Dispatcher& dispatcher, Upstream::ResourcePriority priority);
 
   void enableBackoffTimer();
   void resetRetry();
@@ -108,21 +104,17 @@ private:
   Runtime::Loader& runtime_;
   Random::RandomGenerator& random_;
   Event::Dispatcher& dispatcher_;
-  TimeSource& time_source_;
   uint32_t retry_on_{};
   uint32_t retries_remaining_{};
   DoRetryCallback callback_;
   Event::TimerPtr retry_timer_;
   Upstream::ResourcePriority priority_;
   BackOffStrategyPtr backoff_strategy_;
-  BackOffStrategyPtr ratelimited_backoff_strategy_{};
   std::vector<Upstream::RetryHostPredicateSharedPtr> retry_host_predicates_;
   Upstream::RetryPrioritySharedPtr retry_priority_;
   uint32_t host_selection_max_attempts_;
   std::vector<uint32_t> retriable_status_codes_;
   std::vector<Http::HeaderMatcherSharedPtr> retriable_headers_;
-  std::vector<ResetHeaderParserSharedPtr> reset_headers_{};
-  std::chrono::milliseconds reset_max_interval_{};
 };
 
 } // namespace Router

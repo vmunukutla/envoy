@@ -194,13 +194,16 @@ TEST_F(AwsLambdaFilterTest, DecodeHeadersInvocationModeSetsHeader) {
   EXPECT_EQ(Http::FilterHeadersStatus::Continue, header_result);
 
   std::string invocation_header_value;
-  headers.iterate([&invocation_header_value](const Http::HeaderEntry& entry) {
-    if (entry.key().getStringView() == "x-amz-invocation-type") {
-      invocation_header_value.append(std::string(entry.value().getStringView()));
-      return Http::HeaderMap::Iterate::Break;
-    }
-    return Http::HeaderMap::Iterate::Continue;
-  });
+  headers.iterate(
+      [](const Http::HeaderEntry& entry, void* ctx) {
+        auto* out = static_cast<std::string*>(ctx);
+        if (entry.key().getStringView() == "x-amz-invocation-type") {
+          out->append(std::string(entry.value().getStringView()));
+          return Http::HeaderMap::Iterate::Break;
+        }
+        return Http::HeaderMap::Iterate::Continue;
+      },
+      &invocation_header_value);
 
   EXPECT_EQ("RequestResponse", invocation_header_value);
 }
@@ -524,12 +527,15 @@ TEST_F(AwsLambdaFilterTest, EncodeDataJsonModeTransformToHttp) {
   EXPECT_EQ("awesome value", custom_header->value().getStringView());
 
   std::vector<std::string> cookies;
-  headers.iterate([&cookies](const Http::HeaderEntry& entry) {
-    if (entry.key().getStringView() == Http::Headers::get().SetCookie.get()) {
-      cookies.emplace_back(entry.value().getStringView());
-    }
-    return Http::HeaderMap::Iterate::Continue;
-  });
+  headers.iterate(
+      [](const Http::HeaderEntry& entry, void* ctx) {
+        auto* list = static_cast<std::vector<std::string>*>(ctx);
+        if (entry.key().getStringView() == Http::Headers::get().SetCookie.get()) {
+          list->emplace_back(entry.value().getStringView());
+        }
+        return Http::HeaderMap::Iterate::Continue;
+      },
+      &cookies);
 
   EXPECT_THAT(cookies, ElementsAre("session-id=42; Secure; HttpOnly", "user=joe"));
 }

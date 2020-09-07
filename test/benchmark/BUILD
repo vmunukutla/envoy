@@ -17,7 +17,6 @@ envoy_cc_test_library(
         "tclap",
     ],
     deps = [
-        "//source/common/common:minimal_logger_lib",
         "//test/test_common:environment_lib",
     ],
 )

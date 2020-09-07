@@ -16,7 +16,7 @@ class HystrixSinkFactory : Logger::Loggable<Logger::Id::config>,
 public:
   // StatsSinkFactory
   Stats::SinkPtr createStatsSink(const Protobuf::Message& config,
-                                 Server::Configuration::ServerFactoryContext& server) override;
+                                 Server::Instance& server) override;
 
   ProtobufTypes::MessagePtr createEmptyConfigProto() override;
 

@@ -83,7 +83,6 @@ typed_config:
   EXPECT_EQ(0UL, test_server_->counter("http.config_test.fault.aborts_injected")->value());
   EXPECT_EQ(0UL, test_server_->counter("http.config_test.fault.delays_injected")->value());
   EXPECT_EQ(0UL, test_server_->counter("http.config_test.fault.response_rl_injected")->value());
-  EXPECT_EQ(0UL, test_server_->gauge("http.config_test.fault.active_faults")->value());
 }
 
 // Response rate limited with no trailers.
@@ -93,10 +92,6 @@ TEST_P(FaultIntegrationTestAllProtocols, ResponseRateLimitNoTrailers) {
   IntegrationStreamDecoderPtr decoder =
       codec_client_->makeHeaderOnlyRequest(default_request_headers_);
   waitForNextUpstreamRequest();
-
-  // Active faults gauge is incremented.
-  EXPECT_EQ(1UL, test_server_->gauge("http.config_test.fault.active_faults")->value());
-
   upstream_request_->encodeHeaders(default_response_headers_, false);
   Buffer::OwnedImpl data(std::string(127, 'a'));
   upstream_request_->encodeData(data, true);
@@ -112,7 +107,6 @@ TEST_P(FaultIntegrationTestAllProtocols, ResponseRateLimitNoTrailers) {
   EXPECT_EQ(0UL, test_server_->counter("http.config_test.fault.aborts_injected")->value());
   EXPECT_EQ(0UL, test_server_->counter("http.config_test.fault.delays_injected")->value());
   EXPECT_EQ(1UL, test_server_->counter("http.config_test.fault.response_rl_injected")->value());
-  EXPECT_EQ(0UL, test_server_->gauge("http.config_test.fault.active_faults")->value());
 }
 
 // Request delay and response rate limited via header configuration.
@@ -125,11 +119,12 @@ TEST_P(FaultIntegrationTestAllProtocols, HeaderFaultConfig) {
                                                  {":authority", "host"},
                                                  {"x-envoy-fault-delay-request", "200"},
                                                  {"x-envoy-fault-throughput-response", "1"}};
+  const auto current_time = simTime().monotonicTime();
   IntegrationStreamDecoderPtr decoder = codec_client_->makeHeaderOnlyRequest(request_headers);
-  test_server_->waitForCounterEq("http.config_test.fault.delays_injected", 1,
-                                 TestUtility::DefaultTimeout, dispatcher_.get());
-  simTime().advanceTimeWait(std::chrono::milliseconds(200));
   waitForNextUpstreamRequest();
+
+  // At least 200ms of simulated time should have elapsed before we got the upstream request.
+  EXPECT_LE(std::chrono::milliseconds(200), simTime().monotonicTime() - current_time);
 
   // Verify response body throttling.
   upstream_request_->encodeHeaders(default_response_headers_, false);
@@ -147,7 +142,6 @@ TEST_P(FaultIntegrationTestAllProtocols, HeaderFaultConfig) {
   EXPECT_EQ(0UL, test_server_->counter("http.config_test.fault.aborts_injected")->value());
   EXPECT_EQ(1UL, test_server_->counter("http.config_test.fault.delays_injected")->value());
   EXPECT_EQ(1UL, test_server_->counter("http.config_test.fault.response_rl_injected")->value());
-  EXPECT_EQ(0UL, test_server_->gauge("http.config_test.fault.active_faults")->value());
 }
 
 // Request abort controlled via header configuration.
@@ -169,7 +163,6 @@ TEST_P(FaultIntegrationTestAllProtocols, HeaderFaultAbortConfig) {
   EXPECT_EQ(1UL, test_server_->counter("http.config_test.fault.aborts_injected")->value());
   EXPECT_EQ(0UL, test_server_->counter("http.config_test.fault.delays_injected")->value());
   EXPECT_EQ(0UL, test_server_->counter("http.config_test.fault.response_rl_injected")->value());
-  EXPECT_EQ(0UL, test_server_->gauge("http.config_test.fault.active_faults")->value());
 }
 
 // Request faults controlled via header configuration.
@@ -195,7 +188,6 @@ TEST_P(FaultIntegrationTestAllProtocols, HeaderFaultsConfig0PercentageHeaders) {
   EXPECT_EQ(0UL, test_server_->counter("http.config_test.fault.aborts_injected")->value());
   EXPECT_EQ(0UL, test_server_->counter("http.config_test.fault.delays_injected")->value());
   EXPECT_EQ(0UL, test_server_->counter("http.config_test.fault.response_rl_injected")->value());
-  EXPECT_EQ(0UL, test_server_->gauge("http.config_test.fault.active_faults")->value());
 }
 
 // Request faults controlled via header configuration.
@@ -212,9 +204,6 @@ TEST_P(FaultIntegrationTestAllProtocols, HeaderFaultsConfig100PercentageHeaders)
                                      {"x-envoy-fault-delay-request-percentage", "100"},
                                      {"x-envoy-fault-throughput-response", "100"},
                                      {"x-envoy-fault-throughput-response-percentage", "100"}});
-  test_server_->waitForCounterEq("http.config_test.fault.delays_injected", 1,
-                                 TestUtility::DefaultTimeout, dispatcher_.get());
-  simTime().advanceTimeWait(std::chrono::milliseconds(100));
   waitForNextUpstreamRequest();
   upstream_request_->encodeHeaders(default_response_headers_, true);
   response->waitForEndStream();
@@ -222,7 +211,6 @@ TEST_P(FaultIntegrationTestAllProtocols, HeaderFaultsConfig100PercentageHeaders)
   EXPECT_EQ(0UL, test_server_->counter("http.config_test.fault.aborts_injected")->value());
   EXPECT_EQ(1UL, test_server_->counter("http.config_test.fault.delays_injected")->value());
   EXPECT_EQ(1UL, test_server_->counter("http.config_test.fault.response_rl_injected")->value());
-  EXPECT_EQ(0UL, test_server_->gauge("http.config_test.fault.active_faults")->value());
 }
 
 // Header configuration with no headers, so no fault injection.
@@ -235,7 +223,6 @@ TEST_P(FaultIntegrationTestAllProtocols, HeaderFaultConfigNoHeaders) {
   EXPECT_EQ(0UL, test_server_->counter("http.config_test.fault.aborts_injected")->value());
   EXPECT_EQ(0UL, test_server_->counter("http.config_test.fault.delays_injected")->value());
   EXPECT_EQ(0UL, test_server_->counter("http.config_test.fault.response_rl_injected")->value());
-  EXPECT_EQ(0UL, test_server_->gauge("http.config_test.fault.active_faults")->value());
 }
 
 // Request abort with grpc status, controlled via header configuration.
@@ -264,7 +251,6 @@ TEST_P(FaultIntegrationTestAllProtocols, HeaderFaultAbortGrpcConfig) {
   EXPECT_EQ(1UL, test_server_->counter("http.config_test.fault.aborts_injected")->value());
   EXPECT_EQ(0UL, test_server_->counter("http.config_test.fault.delays_injected")->value());
   EXPECT_EQ(0UL, test_server_->counter("http.config_test.fault.response_rl_injected")->value());
-  EXPECT_EQ(0UL, test_server_->gauge("http.config_test.fault.active_faults")->value());
 }
 
 // Request abort with grpc status, controlled via header configuration.
@@ -287,7 +273,6 @@ TEST_P(FaultIntegrationTestAllProtocols, HeaderFaultAbortGrpcConfig0PercentageHe
   EXPECT_EQ(0UL, test_server_->counter("http.config_test.fault.aborts_injected")->value());
   EXPECT_EQ(0UL, test_server_->counter("http.config_test.fault.delays_injected")->value());
   EXPECT_EQ(0UL, test_server_->counter("http.config_test.fault.response_rl_injected")->value());
-  EXPECT_EQ(0UL, test_server_->gauge("http.config_test.fault.active_faults")->value());
 }
 
 // Request abort with grpc status, controlled via configuration.
@@ -315,7 +300,6 @@ TEST_P(FaultIntegrationTestAllProtocols, FaultAbortGrpcConfig) {
   EXPECT_EQ(1UL, test_server_->counter("http.config_test.fault.aborts_injected")->value());
   EXPECT_EQ(0UL, test_server_->counter("http.config_test.fault.delays_injected")->value());
   EXPECT_EQ(0UL, test_server_->counter("http.config_test.fault.response_rl_injected")->value());
-  EXPECT_EQ(0UL, test_server_->gauge("http.config_test.fault.active_faults")->value());
 }
 
 // Fault integration tests that run with HTTP/2 only, used for fully testing trailers.
@@ -332,10 +316,6 @@ TEST_P(FaultIntegrationTestHttp2, ResponseRateLimitTrailersBodyFlushed) {
   IntegrationStreamDecoderPtr decoder =
       codec_client_->makeHeaderOnlyRequest(default_request_headers_);
   waitForNextUpstreamRequest();
-
-  // Active fault gauge is incremented.
-  EXPECT_EQ(1UL, test_server_->gauge("http.config_test.fault.active_faults")->value());
-
   upstream_request_->encodeHeaders(default_response_headers_, false);
   Buffer::OwnedImpl data(std::string(127, 'a'));
   upstream_request_->encodeData(data, false);
@@ -356,7 +336,6 @@ TEST_P(FaultIntegrationTestHttp2, ResponseRateLimitTrailersBodyFlushed) {
   EXPECT_EQ(0UL, test_server_->counter("http.config_test.fault.aborts_injected")->value());
   EXPECT_EQ(0UL, test_server_->counter("http.config_test.fault.delays_injected")->value());
   EXPECT_EQ(1UL, test_server_->counter("http.config_test.fault.response_rl_injected")->value());
-  EXPECT_EQ(0UL, test_server_->gauge("http.config_test.fault.active_faults")->value());
 }
 
 // Rate limiting with trailers received before the body has been flushed.
@@ -384,7 +363,6 @@ TEST_P(FaultIntegrationTestHttp2, ResponseRateLimitTrailersBodyNotFlushed) {
   EXPECT_EQ(0UL, test_server_->counter("http.config_test.fault.aborts_injected")->value());
   EXPECT_EQ(0UL, test_server_->counter("http.config_test.fault.delays_injected")->value());
   EXPECT_EQ(1UL, test_server_->counter("http.config_test.fault.response_rl_injected")->value());
-  EXPECT_EQ(0UL, test_server_->gauge("http.config_test.fault.active_faults")->value());
 }
 
 } // namespace

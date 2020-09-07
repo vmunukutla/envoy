@@ -1,6 +1,5 @@
 #pragma once
 
-#include <memory>
 #include <string>
 
 #include "envoy/extensions/filters/http/grpc_http1_reverse_bridge/v3/config.pb.h"
@@ -48,8 +47,6 @@ private:
   // buffer we instead maintain our own.
   Buffer::OwnedImpl buffer_{};
 };
-
-using FilterPtr = std::unique_ptr<Filter>;
 
 class FilterConfigPerRoute : public Router::RouteSpecificFilterConfig {
 public:

@@ -60,7 +60,7 @@ public:
   // Network::Connection
   void addBytesSentCallback(BytesSentCb cb) override;
   void enableHalfClose(bool enabled) override;
-  void close(ConnectionCloseType type) final;
+  void close(ConnectionCloseType type) override;
   std::string nextProtocol() const override { return transport_socket_->protocol(); }
   void noDelay(bool enable) override;
   void readDisable(bool disable) override;
@@ -132,7 +132,7 @@ protected:
   bool consumerWantsToRead();
 
   // Network::ConnectionImplBase
-  void closeConnectionImmediately() final;
+  void closeConnectionImmediately() override;
 
   void closeSocket(ConnectionEvent close_type);
 

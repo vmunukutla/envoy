@@ -37,7 +37,7 @@ public:
     stats_.active_.inc();
     ENVOY_LOG(debug, "WasmVm created {} now active", runtime_, stats_.active_.value());
   }
-  ~WasmVmBase() override {
+  virtual ~WasmVmBase() {
     stats_.active_.dec();
     ENVOY_LOG(debug, "~WasmVm {} {} remaining active", runtime_, stats_.active_.value());
   }

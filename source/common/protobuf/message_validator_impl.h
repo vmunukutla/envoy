@@ -85,11 +85,11 @@ public:
                                          : dynamic_warning_validation_visitor_)
                                   : ProtobufMessage::getStrictValidationVisitor()) {}
 
-  ProtobufMessage::WarningValidationVisitorImpl& staticWarningValidationVisitor() {
+  ProtobufMessage::WarningValidationVisitorImpl& static_warning_validation_visitor() {
     return static_warning_validation_visitor_;
   }
 
-  ProtobufMessage::WarningValidationVisitorImpl& dynamicWarningValidationVisitor() {
+  ProtobufMessage::WarningValidationVisitorImpl& dynamic_warning_validation_visitor() {
     return dynamic_warning_validation_visitor_;
   }
 

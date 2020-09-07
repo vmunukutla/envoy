@@ -36,6 +36,13 @@ public:
                      Network::Socket::OptionsSharedPtr options,
                      const envoy::config::core::v3::RuntimeFeatureFlag& enabled);
 
+  ActiveQuicListener(Event::Dispatcher& dispatcher, Network::ConnectionHandler& parent,
+                     Network::SocketSharedPtr listen_socket,
+                     Network::ListenerConfig& listener_config, const quic::QuicConfig& quic_config,
+                     Network::Socket::OptionsSharedPtr options,
+                     std::unique_ptr<quic::ProofSource> proof_source,
+                     const envoy::config::core::v3::RuntimeFeatureFlag& enabled);
+
   ~ActiveQuicListener() override;
 
   void onListenerShutdown();
@@ -47,7 +54,6 @@ public:
   void onReceiveError(Api::IoError::IoErrorCode /*error_code*/) override {
     // No-op. Quic can't do anything upon listener error.
   }
-  Network::UdpPacketWriter& udpPacketWriter() override { return *udp_packet_writer_; }
 
   // ActiveListenerImplBase
   Network::Listener* listener() override { return udp_listener_.get(); }
@@ -66,7 +72,6 @@ private:
   std::unique_ptr<EnvoyQuicDispatcher> quic_dispatcher_;
   Network::Socket& listen_socket_;
   Runtime::FeatureFlag enabled_;
-  Network::UdpPacketWriter* udp_packet_writer_;
 };
 
 using ActiveQuicListenerPtr = std::unique_ptr<ActiveQuicListener>;

@@ -16,4 +16,3 @@ Services
   tap/v3/*
   ../config/tap/v3/*
   trace/v3/*
-  extension/v3/*

@@ -19,7 +19,6 @@ public:
   ApiListenerIntegrationTest() : BaseIntegrationTest(GetParam(), bootstrapConfig()) {
     use_lds_ = false;
     autonomous_upstream_ = true;
-    defer_listener_finalization_ = true;
   }
 
   void SetUp() override {
@@ -28,8 +27,8 @@ public:
       // https://github.com/envoyproxy/envoy/blob/0b92c58d08d28ba7ef0ed5aaf44f90f0fccc5dce/test/integration/integration.cc#L454
       // Thus, the ApiListener has to be added in addition to the already existing listener in the
       // config.
-      bootstrap.mutable_static_resources()->mutable_listeners(0)->MergeFrom(
-          Server::parseListenerFromV3Yaml(apiListenerConfig()));
+      bootstrap.mutable_static_resources()->add_listeners()->MergeFrom(
+          Server::parseListenerFromV2Yaml(apiListenerConfig()));
     });
   }
 

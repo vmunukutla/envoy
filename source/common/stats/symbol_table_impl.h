@@ -5,6 +5,7 @@
 #include <memory>
 #include <stack>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 #include "envoy/common/exception.h"
@@ -497,7 +498,7 @@ public:
   // generate symbols for it.
   StatNameManagedStorage(absl::string_view name, SymbolTable& table)
       : StatNameStorage(name, table), symbol_table_(table) {}
-  StatNameManagedStorage(StatNameManagedStorage&& src) noexcept
+  StatNameManagedStorage(StatNameManagedStorage&& src)
       : StatNameStorage(std::move(src)), symbol_table_(src.symbol_table_) {}
 
   ~StatNameManagedStorage() { free(symbol_table_); }

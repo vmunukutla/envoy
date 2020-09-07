@@ -1,7 +1,5 @@
 #pragma once
 
-#include <memory>
-
 #include "envoy/common/pure.h"
 
 #include "absl/types/optional.h"
@@ -25,7 +23,6 @@ public:
   virtual absl::optional<std::string> getRegion() PURE;
 };
 
-using RegionProviderPtr = std::unique_ptr<RegionProvider>;
 using RegionProviderSharedPtr = std::shared_ptr<RegionProvider>;
 
 } // namespace Aws

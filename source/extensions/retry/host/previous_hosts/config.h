@@ -4,6 +4,7 @@
 #include "envoy/upstream/retry.h"
 
 #include "extensions/retry/host/previous_hosts/previous_hosts.h"
+#include "extensions/retry/host/well_known_names.h"
 
 namespace Envoy {
 namespace Extensions {
@@ -17,7 +18,9 @@ public:
     return std::make_shared<PreviousHostsRetryPredicate>(retry_count);
   }
 
-  std::string name() const override { return "envoy.retry_host_predicates.previous_hosts"; }
+  std::string name() const override {
+    return RetryHostPredicateValues::get().PreviousHostsPredicate;
+  }
 
   ProtobufTypes::MessagePtr createEmptyConfigProto() override {
     return std::make_unique<envoy::config::retry::previous_hosts::v2::PreviousHostsPredicate>();

@@ -28,11 +28,6 @@ mappers:
           name: test-header
           exact_match: exact-match-value
     status_code: 550
-    headers_to_add:
-      - header:
-          key: foo
-          value: bar
-        append: false
 body_format:
   json_format:
     level: TRACE
@@ -79,7 +74,6 @@ body_format:
   EXPECT_EQ("application/json", response->headers().ContentType()->value().getStringView());
   EXPECT_EQ("150", response->headers().ContentLength()->value().getStringView());
   EXPECT_EQ("550", response->headers().Status()->value().getStringView());
-  EXPECT_EQ("bar", response->headers().get(Http::LowerCaseString("foo"))->value().getStringView());
   // Check if returned json is same as expected
   EXPECT_TRUE(TestUtility::jsonStringEqual(response->body(), expected_body));
 }
@@ -137,7 +131,7 @@ body_format:
       expected_grpc_message));
 }
 
-// Matched second filter has code, headers and body rewrite and its format
+// Matched second filter has code and body rewrite and its format
 TEST_P(LocalReplyIntegrationTest, MapStatusCodeAndFormatToJsonForFirstMatchingFilter) {
   const std::string yaml = R"EOF(
 mappers:
@@ -153,11 +147,6 @@ mappers:
           name: test-header
           exact_match: exact-match-value
     status_code: 551
-    headers_to_add:
-      - header:
-          key: foo
-          value: bar
-        append: false
     body:
       inline_string: "customized body text"
     body_format_override:
@@ -210,7 +199,6 @@ body_format:
   EXPECT_EQ("text/plain", response->headers().ContentType()->value().getStringView());
   EXPECT_EQ("24", response->headers().ContentLength()->value().getStringView());
   EXPECT_EQ("551", response->headers().Status()->value().getStringView());
-  EXPECT_EQ("bar", response->headers().get(Http::LowerCaseString("foo"))->value().getStringView());
   // Check if returned json is same as expected
   EXPECT_EQ(response->body(), expected_body);
 }
