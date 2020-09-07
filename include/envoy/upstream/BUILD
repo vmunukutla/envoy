@@ -11,9 +11,6 @@ envoy_package()
 envoy_cc_library(
     name = "cluster_manager_interface",
     hdrs = ["cluster_manager.h"],
-    external_deps = [
-        "abseil_node_hash_map",
-    ],
     deps = [
         ":health_checker_interface",
         ":load_balancer_interface",

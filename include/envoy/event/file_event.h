@@ -20,14 +20,6 @@ struct FileReadyType {
 
 enum class FileTriggerType { Level, Edge };
 
-static constexpr FileTriggerType PlatformDefaultTriggerType
-#ifdef WIN32
-    // Libevent only supports Level trigger on Windows.
-    {FileTriggerType::Level};
-#else
-    {FileTriggerType::Edge};
-#endif
-
 /**
  * Callback invoked when a FileEvent is ready for reading or writing.
  */

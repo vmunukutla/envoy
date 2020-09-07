@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 
 # Enforce header order in a given file. This will only reorder in the first sequence of contiguous
 # #include statements, so it will not play well with #ifdef.
@@ -12,15 +12,17 @@
 # enough to handle block splitting and correctly detecting the main header subject to the Envoy
 # canonical paths.
 
+from __future__ import print_function
+
 import argparse
 import common
-import pathlib
 import re
 import sys
 
 
 def ReorderHeaders(path):
-  source = pathlib.Path(path).read_text(encoding='utf-8')
+  with open(path, 'r') as f:
+    source = f.read()
 
   all_lines = iter(source.split('\n'))
   before_includes_lines = []
@@ -115,6 +117,7 @@ if __name__ == '__main__':
   include_dir_order = args.include_dir_order.split(',')
   reorderd_source = ReorderHeaders(target_path)
   if args.rewrite:
-    pathlib.Path(target_path).write_text(reorderd_source, encoding='utf-8')
+    with open(target_path, 'w') as f:
+      f.write(reorderd_source)
   else:
-    sys.stdout.buffer.write(reorderd_source.encode('utf-8'))
+    sys.stdout.write(reorderd_source)

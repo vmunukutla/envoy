@@ -77,7 +77,7 @@ public:
   Event::MockTimer* timer_ = nullptr;
   Event::MockDispatcher dispatcher_;
   Grpc::MockAsyncClient* async_client_{new Grpc::MockAsyncClient};
-  GrpcAccessLoggerImplPtr logger_;
+  std::unique_ptr<GrpcAccessLoggerImpl> logger_;
 };
 
 // Test basic stream logging flow.
@@ -372,7 +372,7 @@ public:
   Grpc::MockAsyncClientManager async_client_manager_;
   Grpc::MockAsyncClient* async_client_ = nullptr;
   Grpc::MockAsyncClientFactory* factory_ = nullptr;
-  GrpcAccessLoggerCacheImplPtr logger_cache_;
+  std::unique_ptr<GrpcAccessLoggerCacheImpl> logger_cache_;
   NiceMock<Stats::MockIsolatedStatsStore> scope_;
 };
 

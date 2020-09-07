@@ -31,6 +31,12 @@ EXTENSIONS = {
     "envoy.grpc_credentials.aws_iam":                   "//source/extensions/grpc_credentials/aws_iam:config",
 
     #
+    # gRPC stream demuxer
+    #
+
+    "envoy.grpc_stream_demuxer":                        "//source/extensions/grpc_stream_demuxer:config",
+
+    #
     # Health checkers
     #
 
@@ -161,7 +167,6 @@ EXTENSIONS = {
     #
 
     "envoy.transport_sockets.alts":                     "//source/extensions/transport_sockets/alts:config",
-    "envoy.transport_sockets.upstream_proxy_protocol":  "//source/extensions/transport_sockets/proxy_protocol:upstream_proxy_protocol",
     "envoy.transport_sockets.raw_buffer":               "//source/extensions/transport_sockets/raw_buffer:config",
     "envoy.transport_sockets.tap":                      "//source/extensions/transport_sockets/tap:config",
     "envoy.transport_sockets.quic":                     "//source/extensions/quic_listeners/quiche:quic_transport_socket_factory_lib",
@@ -199,9 +204,3 @@ EXTENSIONS = {
 
 
 }
-
-# This can be used to extend the visibility rules for Envoy extensions
-# (//:extension_config and //:extension_library in //BUILD)
-# if downstream Envoy builds need to directly reference envoy extensions.
-ADDITIONAL_VISIBILITY = [
-  ]

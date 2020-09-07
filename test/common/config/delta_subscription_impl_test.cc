@@ -43,9 +43,6 @@ TEST_F(DeltaSubscriptionImplTest, UpdateResourcesCausesRequest) {
 TEST_F(DeltaSubscriptionImplTest, PauseHoldsRequest) {
   startSubscription({"name1", "name2", "name3"});
   auto resume_sub = subscription_->pause();
-  // If nested pause wasn't handled correctly, the single expectedSendMessage below would be
-  // insufficient.
-  auto nested_resume_sub = subscription_->pause();
 
   expectSendMessage({"name4"}, {"name1", "name2"}, Grpc::Status::WellKnownGrpcStatus::Ok, "", {});
   // If not for the pause, these updates would make the expectSendMessage fail due to too many
@@ -142,12 +139,12 @@ TEST(DeltaSubscriptionImplFixturelessTest, NoGrpcStream) {
   const Protobuf::MethodDescriptor* method_descriptor =
       Protobuf::DescriptorPool::generated_pool()->FindMethodByName(
           "envoy.api.v2.EndpointDiscoveryService.StreamEndpoints");
-  NewGrpcMuxImplSharedPtr xds_context = std::make_shared<NewGrpcMuxImpl>(
+  std::shared_ptr<NewGrpcMuxImpl> xds_context = std::make_shared<NewGrpcMuxImpl>(
       std::unique_ptr<Grpc::MockAsyncClient>(async_client), dispatcher, *method_descriptor,
       envoy::config::core::v3::ApiVersion::AUTO, random, stats_store, rate_limit_settings,
       local_info);
 
-  GrpcSubscriptionImplPtr subscription = std::make_unique<GrpcSubscriptionImpl>(
+  std::unique_ptr<GrpcSubscriptionImpl> subscription = std::make_unique<GrpcSubscriptionImpl>(
       xds_context, callbacks, resource_decoder, stats, Config::TypeUrl::get().ClusterLoadAssignment,
       dispatcher, std::chrono::milliseconds(12345), false);
 

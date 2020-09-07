@@ -8,8 +8,6 @@
 
 #include "extensions/filters/network/thrift_proxy/buffer_helper.h"
 
-#include "absl/strings/str_replace.h"
-
 namespace Envoy {
 namespace Extensions {
 namespace NetworkFilters {
@@ -145,11 +143,8 @@ bool HeaderTransportImpl::decodeFrameStart(Buffer::Instance& buffer, MessageMeta
     }
 
     while (num_headers-- > 0) {
-      std::string key_string = drainVarString(buffer, header_size, "header key");
-      // LowerCaseString doesn't allow '\0', '\n', and '\r'.
-      key_string =
-          absl::StrReplaceAll(key_string, {{std::string(1, '\0'), ""}, {"\n", ""}, {"\r", ""}});
-      const Http::LowerCaseString key = Http::LowerCaseString(key_string);
+      const Http::LowerCaseString key =
+          Http::LowerCaseString(drainVarString(buffer, header_size, "header key"));
       const std::string value = drainVarString(buffer, header_size, "header value");
       metadata.headers().addCopy(key, value);
     }
@@ -210,11 +205,14 @@ void HeaderTransportImpl::encodeFrame(Buffer::Instance& buffer, const MessageMet
     // Num headers
     BufferHelper::writeVarIntI32(header_buffer, static_cast<int32_t>(headers.size()));
 
-    headers.iterate([&header_buffer](const Http::HeaderEntry& header) -> Http::HeaderMap::Iterate {
-      writeVarString(header_buffer, header.key().getStringView());
-      writeVarString(header_buffer, header.value().getStringView());
-      return Http::HeaderMap::Iterate::Continue;
-    });
+    headers.iterate(
+        [](const Http::HeaderEntry& header, void* context) -> Http::HeaderMap::Iterate {
+          Buffer::Instance* hb = static_cast<Buffer::Instance*>(context);
+          writeVarString(*hb, header.key().getStringView());
+          writeVarString(*hb, header.value().getStringView());
+          return Http::HeaderMap::Iterate::Continue;
+        },
+        &header_buffer);
   }
 
   uint64_t header_size = header_buffer.length();

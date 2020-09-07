@@ -1,5 +1,4 @@
-ARG ENVOY_VRP_BASE_IMAGE
-FROM $ENVOY_VRP_BASE_IMAGE
+FROM envoyproxy/envoy:local
 
 RUN apt-get update \
     && apt-get upgrade -y \

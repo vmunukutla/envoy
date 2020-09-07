@@ -1,7 +1,7 @@
 load(
     "//bazel:envoy_build_system.bzl",
     "envoy_cc_extension",
-    "envoy_extension_package",
+    "envoy_package",
 )
 
 licenses(["notice"])  # Apache 2
@@ -9,15 +9,13 @@ licenses(["notice"])  # Apache 2
 # HTTP L7 filter responsible for routing to upstream connection pools
 # Public docs: docs/root/configuration/http_filters/router_filter.rst
 
-envoy_extension_package()
+envoy_package()
 
 envoy_cc_extension(
     name = "config",
     srcs = ["config.cc"],
     hdrs = ["config.h"],
     security_posture = "robust_to_untrusted_downstream",
-    # This is core Envoy config.
-    visibility = ["//visibility:public"],
     deps = [
         "//include/envoy/registry",
         "//source/common/router:router_lib",

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <unordered_map>
+
 #include "common/common/macros.h"
 
 #include "extensions/common/utility.h"

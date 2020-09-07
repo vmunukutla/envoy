@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <string>
+#include <unordered_map>
 
 #include "envoy/common/platform.h"
 #include "envoy/event/dispatcher.h"
@@ -12,7 +13,6 @@
 #include "common/common/logger.h"
 #include "common/common/utility.h"
 
-#include "absl/container/node_hash_map.h"
 #include "ares.h"
 
 namespace Envoy {
@@ -104,7 +104,7 @@ private:
   ares_channel channel_;
   bool dirty_channel_{};
   const bool use_tcp_for_dns_lookups_;
-  absl::node_hash_map<int, Event::FileEventPtr> events_;
+  std::unordered_map<int, Event::FileEventPtr> events_;
 };
 
 } // namespace Network

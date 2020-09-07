@@ -16,9 +16,8 @@ namespace Extensions {
 namespace StatSinks {
 namespace Hystrix {
 
-Stats::SinkPtr
-HystrixSinkFactory::createStatsSink(const Protobuf::Message& config,
-                                    Server::Configuration::ServerFactoryContext& server) {
+Stats::SinkPtr HystrixSinkFactory::createStatsSink(const Protobuf::Message& config,
+                                                   Server::Instance& server) {
   const auto& hystrix_sink =
       MessageUtil::downcastAndValidate<const envoy::config::metrics::v3::HystrixSink&>(
           config, server.messageValidationContext().staticValidationVisitor());

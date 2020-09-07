@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <functional>
 #include <string>
+#include <unordered_map>
 
 #include "envoy/config/cluster/v3/cluster.pb.h"
 #include "envoy/secret/secret_manager.h"

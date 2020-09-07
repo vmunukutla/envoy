@@ -37,39 +37,27 @@ bool isModifyMethod(const Http::RequestHeaderMap& headers) {
           method_type == method_values.Delete || method_type == method_values.Patch);
 }
 
-std::string hostAndPort(const absl::string_view absolute_url) {
-  Http::Utility::Url url;
-  if (!absolute_url.empty()) {
-    if (url.initialize(absolute_url, /*is_connect=*/false)) {
-      return std::string(url.hostAndPort());
+absl::string_view hostAndPort(const absl::string_view header) {
+  Http::Utility::Url absolute_url;
+  if (!header.empty()) {
+    if (absolute_url.initialize(header, /*is_connect=*/false)) {
+      return absolute_url.hostAndPort();
     }
-    return std::string(absolute_url);
+    return header;
   }
   return EMPTY_STRING;
 }
 
-// Note: per https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Origin,
-//       the Origin header must include the scheme (and hostAndPort expects
-//       an absolute URL).
-std::string sourceOriginValue(const Http::RequestHeaderMap& headers) {
-  const auto origin = hostAndPort(headers.getInlineValue(origin_handle.handle()));
-  if (!origin.empty()) {
+absl::string_view sourceOriginValue(const Http::RequestHeaderMap& headers) {
+  const absl::string_view origin = hostAndPort(headers.getInlineValue(origin_handle.handle()));
+  if (origin != EMPTY_STRING) {
     return origin;
   }
   return hostAndPort(headers.getInlineValue(referer_handle.handle()));
 }
 
-std::string targetOriginValue(const Http::RequestHeaderMap& headers) {
-  const auto host_value = headers.getHostValue();
-
-  // Don't even bother if there's not Host header.
-  if (host_value.empty()) {
-    return EMPTY_STRING;
-  }
-
-  const auto absolute_url = fmt::format(
-      "{}://{}", headers.Scheme() != nullptr ? headers.getSchemeValue() : "http", host_value);
-  return hostAndPort(absolute_url);
+absl::string_view targetOriginValue(const Http::RequestHeaderMap& headers) {
+  return hostAndPort(headers.getHostValue());
 }
 
 static CsrfStats generateStats(const std::string& prefix, Stats::Scope& scope) {
@@ -103,8 +91,8 @@ Http::FilterHeadersStatus CsrfFilter::decodeHeaders(Http::RequestHeaderMap& head
   }
 
   bool is_valid = true;
-  const auto source_origin = sourceOriginValue(headers);
-  if (source_origin.empty()) {
+  const absl::string_view source_origin = sourceOriginValue(headers);
+  if (source_origin == EMPTY_STRING) {
     is_valid = false;
     config_->stats().missing_source_origin_.inc();
   }
@@ -140,7 +128,7 @@ void CsrfFilter::determinePolicy() {
 }
 
 bool CsrfFilter::isValid(const absl::string_view source_origin, Http::RequestHeaderMap& headers) {
-  const auto target_origin = targetOriginValue(headers);
+  const absl::string_view target_origin = targetOriginValue(headers);
   if (source_origin == target_origin) {
     return true;
   }

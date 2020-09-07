@@ -92,9 +92,9 @@ public:
    */
   virtual Upstream::ProtocolOptionsConfigConstSharedPtr
   createProtocolOptionsConfig(const Protobuf::Message& config,
-                              ProtocolOptionsFactoryContext& factory_context) {
+                              ProtobufMessage::ValidationVisitor& validation_visitor) {
     UNREFERENCED_PARAMETER(config);
-    UNREFERENCED_PARAMETER(factory_context);
+    UNREFERENCED_PARAMETER(validation_visitor);
     return nullptr;
   }
 

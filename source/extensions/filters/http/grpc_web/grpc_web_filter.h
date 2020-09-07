@@ -1,5 +1,7 @@
 #pragma once
 
+#include <unordered_set>
+
 #include "envoy/http/filter.h"
 #include "envoy/upstream/cluster_manager.h"
 

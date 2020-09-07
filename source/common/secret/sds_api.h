@@ -75,7 +75,7 @@ private:
   Stats::Store& stats_;
 
   const envoy::config::core::v3::ConfigSource sds_config_;
-  Config::SubscriptionPtr subscription_;
+  std::unique_ptr<Config::Subscription> subscription_;
   const std::string sds_config_name_;
 
   uint64_t secret_hash_;

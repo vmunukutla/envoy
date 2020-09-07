@@ -5,11 +5,9 @@
 #include "envoy/data/tap/v3/wrapper.pb.h"
 
 #include "common/common/assert.h"
-#include "common/common/fmt.h"
-#include "common/config/version_converter.h"
 #include "common/protobuf/utility.h"
 
-#include "extensions/common/matcher/matcher.h"
+#include "extensions/common/tap/tap_matcher.h"
 
 #include "absl/container/fixed_array.h"
 
@@ -17,8 +15,6 @@ namespace Envoy {
 namespace Extensions {
 namespace Common {
 namespace Tap {
-
-using namespace Matcher;
 
 bool Utility::addBufferToProtoBytes(envoy::data::tap::v3::Body& output_body,
                                     uint32_t max_buffered_bytes, const Buffer::Instance& data,
@@ -76,20 +72,7 @@ TapConfigBaseImpl::TapConfigBaseImpl(envoy::config::tap::v3::TapConfig&& proto_c
     NOT_REACHED_GCOVR_EXCL_LINE;
   }
 
-  envoy::config::common::matcher::v3::MatchPredicate match;
-  if (proto_config.has_match()) {
-    // Use the match field whenever it is set.
-    match = proto_config.match();
-  } else if (proto_config.has_match_config()) {
-    // Fallback to use the deprecated match_config field and upgrade (wire cast) it to the new
-    // MatchPredicate which is backward compatible with the old MatchPredicate originally
-    // introduced in the Tap filter.
-    Config::VersionConverter::upgrade(proto_config.match_config(), match);
-  } else {
-    throw EnvoyException(fmt::format("Neither match nor match_config is set in TapConfig: {}",
-                                     proto_config.DebugString()));
-  }
-  buildMatcher(match, matchers_);
+  buildMatcher(proto_config.match_config(), matchers_);
 }
 
 const Matcher& TapConfigBaseImpl::rootMatcher() const {

@@ -1,10 +1,15 @@
 #include "extensions/quic_listeners/quiche/envoy_quic_server_session.h"
 
-#include <memory>
+#pragma GCC diagnostic push
+// QUICHE allows unused parameters.
+#pragma GCC diagnostic ignored "-Wunused-parameter"
+// QUICHE uses offsetof().
+#pragma GCC diagnostic ignored "-Winvalid-offsetof"
+
+#include "quiche/quic/core/quic_crypto_server_stream.h"
+#pragma GCC diagnostic pop
 
 #include "common/common/assert.h"
-
-#include "extensions/quic_listeners/quiche/envoy_quic_crypto_server_stream.h"
 #include "extensions/quic_listeners/quiche/envoy_quic_server_stream.h"
 
 namespace Envoy {
@@ -15,11 +20,11 @@ EnvoyQuicServerSession::EnvoyQuicServerSession(
     std::unique_ptr<EnvoyQuicConnection> connection, quic::QuicSession::Visitor* visitor,
     quic::QuicCryptoServerStream::Helper* helper, const quic::QuicCryptoServerConfig* crypto_config,
     quic::QuicCompressedCertsCache* compressed_certs_cache, Event::Dispatcher& dispatcher,
-    uint32_t send_buffer_limit, Network::ListenerConfig& listener_config)
+    uint32_t send_buffer_limit)
     : quic::QuicServerSessionBase(config, supported_versions, connection.get(), visitor, helper,
                                   crypto_config, compressed_certs_cache),
       QuicFilterManagerConnectionImpl(*connection, dispatcher, send_buffer_limit),
-      quic_connection_(std::move(connection)), listener_config_(listener_config) {}
+      quic_connection_(std::move(connection)) {}
 
 EnvoyQuicServerSession::~EnvoyQuicServerSession() {
   ASSERT(!quic_connection_->connected());
@@ -34,17 +39,8 @@ std::unique_ptr<quic::QuicCryptoServerStreamBase>
 EnvoyQuicServerSession::CreateQuicCryptoServerStream(
     const quic::QuicCryptoServerConfig* crypto_config,
     quic::QuicCompressedCertsCache* compressed_certs_cache) {
-  switch (connection()->version().handshake_protocol) {
-  case quic::PROTOCOL_QUIC_CRYPTO:
-    return std::make_unique<EnvoyQuicCryptoServerStream>(crypto_config, compressed_certs_cache,
-                                                         this, stream_helper());
-  case quic::PROTOCOL_TLS1_3:
-    return std::make_unique<EnvoyQuicTlsServerHandshaker>(this, *crypto_config);
-  case quic::PROTOCOL_UNSUPPORTED:
-    PANIC(fmt::format("Unknown handshake protocol: {}",
-                      static_cast<int>(connection()->version().handshake_protocol)));
-  }
-  return nullptr;
+  return quic::CreateCryptoServerStream(crypto_config, compressed_certs_cache, this,
+                                        stream_helper());
 }
 
 quic::QuicSpdyStream* EnvoyQuicServerSession::CreateIncomingStream(quic::QuicStreamId id) {
@@ -107,32 +103,17 @@ void EnvoyQuicServerSession::OnCanWrite() {
 
 void EnvoyQuicServerSession::SetDefaultEncryptionLevel(quic::EncryptionLevel level) {
   quic::QuicServerSessionBase::SetDefaultEncryptionLevel(level);
-  if (level != quic::ENCRYPTION_FORWARD_SECURE) {
-    return;
+  if (level == quic::ENCRYPTION_FORWARD_SECURE) {
+    // This is only reached once, when handshake is done.
+    raiseConnectionEvent(Network::ConnectionEvent::Connected);
   }
-  maybeCreateNetworkFilters();
-  // This is only reached once, when handshake is done.
-  raiseConnectionEvent(Network::ConnectionEvent::Connected);
 }
 
 bool EnvoyQuicServerSession::hasDataToWrite() { return HasDataToWrite(); }
 
 void EnvoyQuicServerSession::OnOneRttKeysAvailable() {
   quic::QuicServerSessionBase::OnOneRttKeysAvailable();
-  maybeCreateNetworkFilters();
   raiseConnectionEvent(Network::ConnectionEvent::Connected);
-}
-
-void EnvoyQuicServerSession::maybeCreateNetworkFilters() {
-  const EnvoyQuicProofSourceDetails* proof_source_details =
-      dynamic_cast<const EnvoyCryptoServerStream*>(GetCryptoStream())->proofSourceDetails();
-  ASSERT(proof_source_details != nullptr,
-         "ProofSource didn't provide ProofSource::Details. No filter chain will be installed.");
-
-  const bool has_filter_initialized =
-      listener_config_.filterChainFactory().createNetworkFilterChain(
-          *this, proof_source_details->filterChain().networkFilterFactories());
-  ASSERT(has_filter_initialized);
 }
 
 } // namespace Quic

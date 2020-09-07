@@ -323,8 +323,7 @@ TEST(NullableBytesDeserializer, ShouldDeserialize) {
 }
 
 TEST(NullableBytesDeserializer, ShouldDeserializeEmptyBytes) {
-  // gcc refuses to initialize optional with empty vector with value{{}}
-  const NullableBytes value = {{}};
+  const NullableBytes value{{}};
   serializeThenDeserializeAndCheckEquality<NullableBytesDeserializer>(value);
 }
 

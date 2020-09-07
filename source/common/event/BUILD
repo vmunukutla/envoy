@@ -136,8 +136,6 @@ envoy_cc_library(
         ":libevent_lib",
         "//include/envoy/event:timer_interface",
         "//source/common/common:scope_tracker",
-        "//source/common/common:utility_lib",
-        "//source/common/runtime:runtime_features_lib",
     ],
 )
 

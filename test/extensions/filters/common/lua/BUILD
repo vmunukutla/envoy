@@ -14,7 +14,6 @@ envoy_cc_test(
     srcs = ["lua_test.cc"],
     tags = ["skip_on_windows"],
     deps = [
-        "//source/common/thread_local:thread_local_lib",
         "//source/extensions/filters/common/lua:lua_lib",
         "//test/mocks:common_lib",
         "//test/mocks/thread_local:thread_local_mocks",

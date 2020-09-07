@@ -1,6 +1,7 @@
 #include "extensions/access_loggers/file/config.h"
 
 #include <memory>
+#include <unordered_map>
 
 #include "envoy/extensions/access_loggers/file/v3/file.pb.h"
 #include "envoy/extensions/access_loggers/file/v3/file.pb.validate.h"

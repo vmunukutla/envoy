@@ -2,21 +2,19 @@
 
 #include "extensions/common/tap/admin.h"
 
-#include "test/mocks/server/admin.h"
-#include "test/mocks/server/admin_stream.h"
+#include "test/mocks/server/mocks.h"
 
 #include "gtest/gtest.h"
+
+using testing::_;
+using testing::Return;
+using testing::SaveArg;
 
 namespace Envoy {
 namespace Extensions {
 namespace Common {
 namespace Tap {
 namespace {
-
-using ::testing::_;
-using ::testing::DoAll;
-using ::testing::Return;
-using ::testing::SaveArg;
 
 class MockExtensionConfig : public ExtensionConfig {
 public:
@@ -50,7 +48,7 @@ public:
       R"EOF(
 config_id: test_config_id
 tap_config:
-  match:
+  match_config:
     any_match: true
   output_config:
     sinks:

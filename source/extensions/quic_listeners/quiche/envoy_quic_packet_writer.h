@@ -10,14 +10,14 @@
 
 #pragma GCC diagnostic pop
 
-#include "envoy/network/udp_packet_writer_handler.h"
+#include "envoy/network/listener.h"
 
 namespace Envoy {
 namespace Quic {
 
 class EnvoyQuicPacketWriter : public quic::QuicPacketWriter {
 public:
-  EnvoyQuicPacketWriter(Network::UdpPacketWriterPtr envoy_udp_packet_writer);
+  EnvoyQuicPacketWriter(Network::Socket& socket);
 
   quic::WriteResult WritePacket(const char* buffer, size_t buf_len,
                                 const quic::QuicIpAddress& self_address,
@@ -25,19 +25,26 @@ public:
                                 quic::PerPacketOptions* options) override;
 
   // quic::QuicPacketWriter
-  bool IsWriteBlocked() const override { return envoy_udp_packet_writer_->isWriteBlocked(); }
-  void SetWritable() override { envoy_udp_packet_writer_->setWritable(); }
-  bool IsBatchMode() const override { return envoy_udp_packet_writer_->isBatchMode(); }
-  // Currently this writer doesn't support pacing offload.
+  bool IsWriteBlocked() const override { return write_blocked_; }
+  void SetWritable() override { write_blocked_ = false; }
+  quic::QuicByteCount
+  GetMaxPacketSize(const quic::QuicSocketAddress& /*peer_address*/) const override {
+    return quic::kMaxOutgoingPacketSize;
+  }
+  // Currently this writer doesn't support pacing offload or batch writing.
   bool SupportsReleaseTime() const override { return false; }
-
-  quic::QuicByteCount GetMaxPacketSize(const quic::QuicSocketAddress& peer_address) const override;
-  quic::QuicPacketBuffer GetNextWriteLocation(const quic::QuicIpAddress& self_address,
-                                              const quic::QuicSocketAddress& peer_address) override;
-  quic::WriteResult Flush() override;
+  bool IsBatchMode() const override { return false; }
+  quic::QuicPacketBuffer
+  GetNextWriteLocation(const quic::QuicIpAddress& /*self_address*/,
+                       const quic::QuicSocketAddress& /*peer_address*/) override {
+    return {nullptr, nullptr};
+  }
+  quic::WriteResult Flush() override { return {quic::WRITE_STATUS_OK, 0}; }
 
 private:
-  Network::UdpPacketWriterPtr envoy_udp_packet_writer_;
+  // Modified by WritePacket() to indicate underlying IoHandle status.
+  bool write_blocked_;
+  Network::Socket& socket_;
 };
 
 } // namespace Quic

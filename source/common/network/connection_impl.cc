@@ -65,8 +65,12 @@ ConnectionImpl::ConnectionImpl(Event::Dispatcher& dispatcher, ConnectionSocketPt
     connecting_ = true;
   }
 
-  Event::FileTriggerType trigger = Event::PlatformDefaultTriggerType;
-
+  // Libevent only supports Level trigger on Windows.
+#ifdef WIN32
+  Event::FileTriggerType trigger = Event::FileTriggerType::Level;
+#else
+  Event::FileTriggerType trigger = Event::FileTriggerType::Edge;
+#endif
   // We never ask for both early close and read at the same time. If we are reading, we want to
   // consume all available data.
   file_event_ = dispatcher_.createFileEvent(

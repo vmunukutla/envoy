@@ -29,9 +29,11 @@ Configuration
 Runtime
 -------
 
-The Gzip filter can be runtime feature flagged via the :ref:`runtime_enabled
-<envoy_v3_api_field_extensions.filters.http.gzip.v3.Gzip.compressor>`
-configuration field within the compressor field.
+The Gzip filter supports the following runtime settings:
+
+gzip.filter_enabled
+    The % of requests for which the filter is enabled. Default is 100.
+
 
 How it works
 ------------

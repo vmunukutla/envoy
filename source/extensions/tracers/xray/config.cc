@@ -11,6 +11,7 @@
 #include "common/config/datasource.h"
 #include "common/tracing/http_tracer_impl.h"
 
+#include "extensions/tracers/well_known_names.h"
 #include "extensions/tracers/xray/xray_tracer_impl.h"
 
 namespace Envoy {
@@ -18,7 +19,7 @@ namespace Extensions {
 namespace Tracers {
 namespace XRay {
 
-XRayTracerFactory::XRayTracerFactory() : FactoryBase("envoy.tracers.xray") {}
+XRayTracerFactory::XRayTracerFactory() : FactoryBase(TracerNames::get().XRay) {}
 
 Tracing::HttpTracerSharedPtr
 XRayTracerFactory::createHttpTracerTyped(const envoy::config::trace::v3::XRayConfig& proto_config,

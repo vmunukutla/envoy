@@ -73,10 +73,6 @@ cat "${TEST_SRCDIR}/envoy"/test/config/integration/server.yaml |
   cat > "${HOT_RESTART_JSON_REUSE_PORT}"
 JSON_TEST_ARRAY+=("${HOT_RESTART_JSON_REUSE_PORT}")
 
-# Shared memory size varies by architecture
-SHARED_MEMORY_SIZE="104"
-[[ "$(uname -m)" == "aarch64" ]] && SHARED_MEMORY_SIZE="120"
-
 echo "Hot restart test using dynamic base id"
 
 TEST_INDEX=0
@@ -132,7 +128,7 @@ function run_testsuite() {
   # string, compare it against a hard-coded string.
   start_test Checking for consistency of /hot_restart_version
   CLI_HOT_RESTART_VERSION=$("${ENVOY_BIN}" --hot-restart-version --base-id "${BASE_ID}" 2>&1)
-  EXPECTED_CLI_HOT_RESTART_VERSION="11.${SHARED_MEMORY_SIZE}"
+  EXPECTED_CLI_HOT_RESTART_VERSION="11.104"
   echo "The Envoy's hot restart version is ${CLI_HOT_RESTART_VERSION}"
   echo "Now checking that the above version is what we expected."
   check [ "${CLI_HOT_RESTART_VERSION}" = "${EXPECTED_CLI_HOT_RESTART_VERSION}" ]
@@ -140,7 +136,7 @@ function run_testsuite() {
   start_test Checking for consistency of /hot_restart_version with --use-fake-symbol-table "$FAKE_SYMBOL_TABLE"
   CLI_HOT_RESTART_VERSION=$("${ENVOY_BIN}" --hot-restart-version --base-id "${BASE_ID}" \
     --use-fake-symbol-table "$FAKE_SYMBOL_TABLE" 2>&1)
-  EXPECTED_CLI_HOT_RESTART_VERSION="11.${SHARED_MEMORY_SIZE}"
+  EXPECTED_CLI_HOT_RESTART_VERSION="11.104"
   check [ "${CLI_HOT_RESTART_VERSION}" = "${EXPECTED_CLI_HOT_RESTART_VERSION}" ]
 
   start_test Checking for match of --hot-restart-version and admin /hot_restart_version

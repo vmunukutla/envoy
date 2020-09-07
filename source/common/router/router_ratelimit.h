@@ -125,7 +125,6 @@ public:
 private:
   const Envoy::Config::MetadataKey metadata_key_;
   const std::string descriptor_key_;
-  const std::string default_value_;
 };
 
 /**

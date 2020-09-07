@@ -4,8 +4,7 @@
 #include "extensions/filters/http/aws_lambda/aws_lambda_filter.h"
 #include "extensions/filters/http/aws_lambda/config.h"
 
-#include "test/mocks/server/factory_context.h"
-#include "test/mocks/server/instance.h"
+#include "test/mocks/server/mocks.h"
 #include "test/test_common/utility.h"
 
 #include "gmock/gmock.h"

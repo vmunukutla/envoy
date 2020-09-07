@@ -1,4 +1,3 @@
-#pragma once
 #include "envoy/upstream/load_balancer.h"
 
 #include "gmock/gmock.h"

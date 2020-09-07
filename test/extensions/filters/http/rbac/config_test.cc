@@ -5,8 +5,7 @@
 #include "extensions/filters/common/rbac/engine.h"
 #include "extensions/filters/http/rbac/config.h"
 
-#include "test/mocks/server/factory_context.h"
-#include "test/mocks/server/instance.h"
+#include "test/mocks/server/mocks.h"
 
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"

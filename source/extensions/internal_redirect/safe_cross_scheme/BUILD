@@ -2,12 +2,12 @@ load(
     "//bazel:envoy_build_system.bzl",
     "envoy_cc_extension",
     "envoy_cc_library",
-    "envoy_extension_package",
+    "envoy_package",
 )
 
 licenses(["notice"])  # Apache 2
 
-envoy_extension_package()
+envoy_package()
 
 envoy_cc_library(
     name = "safe_cross_scheme_lib",
@@ -24,11 +24,6 @@ envoy_cc_extension(
     srcs = ["config.cc"],
     hdrs = ["config.h"],
     security_posture = "robust_to_untrusted_downstream_and_upstream",
-    # TODO(#9953) clean up by moving the redirect test to extensions.
-    visibility = [
-        "//:extension_config",
-        "//test/integration:__subpackages__",
-    ],
     deps = [
         ":safe_cross_scheme_lib",
         "//include/envoy/registry",

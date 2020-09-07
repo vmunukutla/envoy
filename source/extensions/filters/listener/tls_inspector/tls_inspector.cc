@@ -115,8 +115,7 @@ Network::FilterStatus Filter::onAccept(Network::ListenerFilterCallbacks& cb) {
             break;
           }
         },
-        Event::PlatformDefaultTriggerType,
-        Event::FileReadyType::Read | Event::FileReadyType::Closed);
+        Event::FileTriggerType::Edge, Event::FileReadyType::Read | Event::FileReadyType::Closed);
     return Network::FilterStatus::StopIteration;
   }
   NOT_REACHED_GCOVR_EXCL_LINE;

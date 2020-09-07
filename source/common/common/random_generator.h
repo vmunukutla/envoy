@@ -1,5 +1,3 @@
-#pragma once
-
 #include "envoy/common/random_generator.h"
 
 namespace Envoy {

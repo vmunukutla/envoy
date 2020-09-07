@@ -19,7 +19,7 @@ class PostgresConfigFactory
     : public Common::FactoryBase<
           envoy::extensions::filters::network::postgres_proxy::v3alpha::PostgresProxy> {
 public:
-  PostgresConfigFactory() : FactoryBase{NetworkFilterNames::get().PostgresProxy} {}
+  PostgresConfigFactory() : FactoryBase{NetworkFilterNames::get().Postgres} {}
 
 private:
   Network::FilterFactoryCb createFilterFactoryFromProtoTyped(

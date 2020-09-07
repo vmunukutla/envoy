@@ -24,19 +24,16 @@ LogLevelSetter::~LogLevelSetter() {
 }
 
 LogRecordingSink::LogRecordingSink(Logger::DelegatingLogSinkSharedPtr log_sink)
-    : Logger::SinkDelegate(log_sink) {
-  setDelegate();
-}
-
-LogRecordingSink::~LogRecordingSink() { restoreDelegate(); }
+    : Logger::SinkDelegate(log_sink) {}
+LogRecordingSink::~LogRecordingSink() = default;
 
 void LogRecordingSink::log(absl::string_view msg) {
-  previousDelegate()->log(msg);
+  previous_delegate()->log(msg);
 
   absl::MutexLock ml(&mtx_);
   messages_.push_back(std::string(msg));
 }
 
-void LogRecordingSink::flush() { previousDelegate()->flush(); }
+void LogRecordingSink::flush() { previous_delegate()->flush(); }
 
 } // namespace Envoy

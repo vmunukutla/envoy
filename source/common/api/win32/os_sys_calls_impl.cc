@@ -14,15 +14,14 @@ namespace Envoy {
 namespace Api {
 namespace {
 
-using WSAMSGPtr = std::unique_ptr<WSAMSG>;
+using WSABUFPtr = std::unique_ptr<WSABUF[]>;
 
-struct wsamsgResult {
-  WSAMSGPtr wsamsg_;
-  std::vector<WSABUF> buff_data_;
+struct wsabufResult {
+  DWORD num_vec_;
+  WSABUFPtr wsabuf_;
 };
 
-std::vector<WSABUF> iovecToWSABUF(const iovec* vec, int in_vec) {
-
+wsabufResult iovecToWSABUF(const iovec* vec, int in_vec) {
   DWORD num_vec = 0;
   for (int i = 0; i < in_vec; i++) {
     size_t cur_len = vec[i].iov_len;
@@ -33,26 +32,26 @@ std::vector<WSABUF> iovecToWSABUF(const iovec* vec, int in_vec) {
     }
   }
 
-  std::vector<WSABUF> buff(num_vec);
-  auto it = buff.begin();
+  WSABUFPtr wsa_buf(new WSABUF[num_vec]);
 
-  std::vector<iovec> vecs(vec, vec + in_vec);
-  for (const auto& vec : vecs) {
-    auto chunk = (CHAR*)vec.iov_base;
-    size_t chunk_len = vec.iov_len;
-    // There is the case that the chunk does not fit into a single WSABUF buffer
-    // this is the case because sizeof(size_t) > sizeof(DWORD).
-    // In this case we split the chunk into multiple WSABUF buffers
-    auto remaining_data = chunk_len;
+  WSABUF* wsa_elt = wsa_buf.get();
+  for (int i = 0; i < in_vec; i++) {
+    CHAR* base = static_cast<CHAR*>(vec[i].iov_base);
+    size_t cur_len = vec[i].iov_len;
     do {
-      (*it).buf = chunk;
-      (*it).len = (remaining_data > DWORD_MAX) ? DWORD_MAX : static_cast<ULONG>(chunk_len);
-      remaining_data -= (*it).len;
-      chunk += (*it).len;
-      it++;
-    } while (remaining_data > 0);
+      wsa_elt->buf = base;
+      if (cur_len > DWORD_MAX) {
+        wsa_elt->len = DWORD_MAX;
+      } else {
+        wsa_elt->len = static_cast<DWORD>(cur_len);
+      }
+      base += wsa_elt->len;
+      cur_len -= wsa_elt->len;
+      ++wsa_elt;
+    } while (cur_len > 0);
   }
-  return buff;
+
+  return {num_vec, std::move(wsa_buf)};
 }
 
 LPFN_WSARECVMSG getFnPtrWSARecvMsg() {
@@ -74,22 +73,23 @@ LPFN_WSARECVMSG getFnPtrWSARecvMsg() {
   return recvmsg_fn_ptr;
 }
 
-wsamsgResult msghdrToWSAMSG(const msghdr* msg) {
+using WSAMSGPtr = std::unique_ptr<WSAMSG>;
+
+WSAMSGPtr msghdrToWSAMSG(const msghdr* msg) {
   WSAMSGPtr wsa_msg(new WSAMSG);
 
   wsa_msg->name = reinterpret_cast<SOCKADDR*>(msg->msg_name);
   wsa_msg->namelen = msg->msg_namelen;
-  auto buffer = iovecToWSABUF(msg->msg_iov, msg->msg_iovlen);
-  wsa_msg->lpBuffers = buffer.data();
-  wsa_msg->dwBufferCount = buffer.size();
-
+  wsabufResult wsabuf = iovecToWSABUF(msg->msg_iov, msg->msg_iovlen);
+  wsa_msg->lpBuffers = wsabuf.wsabuf_.get();
+  wsa_msg->dwBufferCount = wsabuf.num_vec_;
   WSABUF control;
   control.buf = reinterpret_cast<CHAR*>(msg->msg_control);
   control.len = msg->msg_controllen;
   wsa_msg->Control = control;
   wsa_msg->dwFlags = msg->msg_flags;
 
-  return wsamsgResult{std::move(wsa_msg), std::move(buffer)};
+  return wsa_msg;
 }
 
 } // namespace
@@ -116,9 +116,10 @@ SysCallIntResult OsSysCallsImpl::close(os_fd_t fd) {
 
 SysCallSizeResult OsSysCallsImpl::writev(os_fd_t fd, const iovec* iov, int num_iov) {
   DWORD bytes_sent;
-  auto buffer = iovecToWSABUF(iov, num_iov);
+  wsabufResult wsabuf = iovecToWSABUF(iov, num_iov);
 
-  const int rc = ::WSASend(fd, buffer.data(), buffer.size(), &bytes_sent, 0, nullptr, nullptr);
+  const int rc =
+      ::WSASend(fd, wsabuf.wsabuf_.get(), wsabuf.num_vec_, &bytes_sent, 0, nullptr, nullptr);
   if (SOCKET_FAILURE(rc)) {
     return {-1, ::WSAGetLastError()};
   }
@@ -128,10 +129,10 @@ SysCallSizeResult OsSysCallsImpl::writev(os_fd_t fd, const iovec* iov, int num_i
 SysCallSizeResult OsSysCallsImpl::readv(os_fd_t fd, const iovec* iov, int num_iov) {
   DWORD bytes_received;
   DWORD flags = 0;
-  auto buffer = iovecToWSABUF(iov, num_iov);
+  wsabufResult wsabuf = iovecToWSABUF(iov, num_iov);
 
-  const int rc =
-      ::WSARecv(fd, buffer.data(), buffer.size(), &bytes_received, &flags, nullptr, nullptr);
+  const int rc = ::WSARecv(fd, wsabuf.wsabuf_.get(), wsabuf.num_vec_, &bytes_received, &flags,
+                           nullptr, nullptr);
   if (SOCKET_FAILURE(rc)) {
     return {-1, ::WSAGetLastError()};
   }
@@ -146,16 +147,16 @@ SysCallSizeResult OsSysCallsImpl::recv(os_fd_t socket, void* buffer, size_t leng
 SysCallSizeResult OsSysCallsImpl::recvmsg(os_fd_t sockfd, msghdr* msg, int flags) {
   DWORD bytes_received;
   LPFN_WSARECVMSG recvmsg_fn_ptr = getFnPtrWSARecvMsg();
-  wsamsgResult wsamsg = msghdrToWSAMSG(msg);
+  WSAMSGPtr wsa_msg = msghdrToWSAMSG(msg);
   // Windows supports only a single flag on input to WSARecvMsg
-  wsamsg.wsamsg_->dwFlags = flags & MSG_PEEK;
-  const int rc = recvmsg_fn_ptr(sockfd, wsamsg.wsamsg_.get(), &bytes_received, nullptr, nullptr);
+  wsa_msg->dwFlags = flags & MSG_PEEK;
+  const int rc = recvmsg_fn_ptr(sockfd, wsa_msg.get(), &bytes_received, nullptr, nullptr);
   if (rc == SOCKET_ERROR) {
     return {-1, ::WSAGetLastError()};
   }
-  msg->msg_namelen = wsamsg.wsamsg_->namelen;
-  msg->msg_flags = wsamsg.wsamsg_->dwFlags;
-  msg->msg_controllen = wsamsg.wsamsg_->Control.len;
+  msg->msg_namelen = wsa_msg->namelen;
+  msg->msg_flags = wsa_msg->dwFlags;
+  msg->msg_controllen = wsa_msg->Control.len;
   return {bytes_received, 0};
 }
 
@@ -165,16 +166,6 @@ SysCallIntResult OsSysCallsImpl::recvmmsg(os_fd_t sockfd, struct mmsghdr* msgvec
 }
 
 bool OsSysCallsImpl::supportsMmsg() const {
-  // Windows doesn't support it.
-  return false;
-}
-
-bool OsSysCallsImpl::supportsUdpGro() const {
-  // Windows doesn't support it.
-  return false;
-}
-
-bool OsSysCallsImpl::supportsUdpGso() const {
   // Windows doesn't support it.
   return false;
 }
@@ -214,9 +205,8 @@ SysCallSocketResult OsSysCallsImpl::socket(int domain, int type, int protocol) {
 SysCallSizeResult OsSysCallsImpl::sendmsg(os_fd_t sockfd, const msghdr* msg, int flags) {
   DWORD bytes_received;
   // if overlapped and/or completion routines are supported adjust the arguments accordingly
-  wsamsgResult wsamsg = msghdrToWSAMSG(msg);
   const int rc =
-      ::WSASendMsg(sockfd, wsamsg.wsamsg_.get(), flags, &bytes_received, nullptr, nullptr);
+      ::WSASendMsg(sockfd, msghdrToWSAMSG(msg).get(), flags, &bytes_received, nullptr, nullptr);
   if (rc == SOCKET_ERROR) {
     return {-1, ::WSAGetLastError()};
   }
@@ -347,16 +337,6 @@ SysCallIntResult OsSysCallsImpl::listen(os_fd_t sockfd, int backlog) {
 SysCallSizeResult OsSysCallsImpl::write(os_fd_t sockfd, const void* buffer, size_t length) {
   const ssize_t rc = ::send(sockfd, static_cast<const char*>(buffer), length, 0);
   return {rc, rc != -1 ? 0 : ::WSAGetLastError()};
-}
-
-SysCallSocketResult OsSysCallsImpl::accept(os_fd_t sockfd, sockaddr* addr, socklen_t* addrlen) {
-  const os_fd_t rc = ::accept(sockfd, addr, addrlen);
-  if (SOCKET_INVALID(rc)) {
-    return {rc, ::WSAGetLastError()};
-  }
-
-  setsocketblocking(rc, false);
-  return {rc, 0};
 }
 
 } // namespace Api
