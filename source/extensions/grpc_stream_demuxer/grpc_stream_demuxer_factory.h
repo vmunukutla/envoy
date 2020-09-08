@@ -13,7 +13,9 @@ class GrpcStreamDemuxerFactory : public Config::UntypedFactory {
 public:
   ~GrpcStreamDemuxerFactory() override = default;
 
-  virtual GrpcStreamDemuxerPtr createGrpcStreamDemuxer(const envoy::extensions::grpc_stream_demuxer::v3alpha::GrpcStreamDemuxer& demuxer_config) PURE;
+  virtual GrpcStreamDemuxerPtr createGrpcStreamDemuxer(
+      const envoy::extensions::grpc_stream_demuxer::v3alpha::GrpcStreamDemuxer& demuxer_config)
+      PURE;
   std::string category() const override { return "envoy.grpc_stream_demuxer"; }
 };
 

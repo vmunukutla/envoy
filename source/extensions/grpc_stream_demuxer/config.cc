@@ -4,8 +4,10 @@ namespace Envoy {
 namespace Extensions {
 namespace GrpcStreamDemuxer {
 
-GrpcStreamDemuxerPtr GrpcStreamDemuxerFactoryImpl::createGrpcStreamDemuxer(const envoy::extensions::grpc_stream_demuxer::v3alpha::GrpcStreamDemuxer& demuxer_config) {
-  return std::make_unique<GrpcStreamDemuxer>(demuxer_config.subscription(), demuxer_config.address(), demuxer_config.port());
+GrpcStreamDemuxerPtr GrpcStreamDemuxerFactoryImpl::createGrpcStreamDemuxer(
+    const envoy::extensions::grpc_stream_demuxer::v3alpha::GrpcStreamDemuxer& demuxer_config) {
+  return std::make_unique<GrpcStreamDemuxer>(demuxer_config.subscription(),
+                                             demuxer_config.address(), demuxer_config.port());
 }
 
 REGISTER_FACTORY(GrpcStreamDemuxerFactoryImpl, GrpcStreamDemuxerFactory);
