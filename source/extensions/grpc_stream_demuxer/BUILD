@@ -32,10 +32,10 @@ envoy_cc_extension(
     name = "config",
     srcs = ["config.cc"],
     hdrs = ["config.h"],
-    deps = [      
-        ":grpc_stream_demuxer_factory_lib",      
-        "//include/envoy/registry",
-    ],
     security_posture = "unknown",
     status = "wip",
+    deps = [
+        ":grpc_stream_demuxer_factory_lib",
+        "//include/envoy/registry",
+    ],
 )

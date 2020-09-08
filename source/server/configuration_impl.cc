@@ -81,7 +81,7 @@ void MainImpl::initialize(const envoy::config::bootstrap::v3::Bootstrap& bootstr
     ENVOY_LOG(debug, "listener #{}:", i);
     server.listenerManager().addOrUpdateListener(listeners[i], "", false);
   }
-  
+
   initializeGrpcStreamDemuxers(bootstrap);
 
   stats_flush_interval_ =
@@ -155,11 +155,14 @@ void MainImpl::initializeStatsSinks(const envoy::config::bootstrap::v3::Bootstra
   }
 }
 
-void MainImpl::initializeGrpcStreamDemuxers(const envoy::config::bootstrap::v3::Bootstrap& bootstrap) {
+void MainImpl::initializeGrpcStreamDemuxers(
+    const envoy::config::bootstrap::v3::Bootstrap& bootstrap) {
   ENVOY_LOG(info, "loading gRPC stream demuxer configurations");
 
-  for (const envoy::extensions::grpc_stream_demuxer::v3alpha::GrpcStreamDemuxer& demuxer_config : bootstrap.grpc_stream_demuxers()) {
-    auto& factory = Config::Utility::getAndCheckFactoryByName<Extensions::GrpcStreamDemuxer::GrpcStreamDemuxerFactory>("grpc_stream_demuxer");
+  for (const envoy::extensions::grpc_stream_demuxer::v3alpha::GrpcStreamDemuxer& demuxer_config :
+       bootstrap.grpc_stream_demuxers()) {
+    auto& factory = Config::Utility::getAndCheckFactoryByName<
+        Extensions::GrpcStreamDemuxer::GrpcStreamDemuxerFactory>("grpc_stream_demuxer");
     grpc_stream_demuxers_.emplace_back(factory.createGrpcStreamDemuxer(demuxer_config));
   }
 }

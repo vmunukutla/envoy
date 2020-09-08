@@ -1,7 +1,9 @@
 #include "envoy/extensions/grpc_stream_demuxer/v3alpha/grpc_stream_demuxer.pb.h"
 
 #include "common/config/utility.h"
+
 #include "extensions/grpc_stream_demuxer/config.h"
+
 #include "test/test_common/utility.h"
 
 #include "gmock/gmock.h"
@@ -20,7 +22,8 @@ TEST(GrpcStreamDemuxerTest, CreateGrpcStreamDemuxer) {
   )EOF";
   envoy::extensions::grpc_stream_demuxer::v3alpha::GrpcStreamDemuxer demuxer_config;
   TestUtility::loadFromYaml(yaml, demuxer_config);
-  auto& factory = Config::Utility::getAndCheckFactoryByName<GrpcStreamDemuxerFactory>("grpc_stream_demuxer");
+  auto& factory =
+      Config::Utility::getAndCheckFactoryByName<GrpcStreamDemuxerFactory>("grpc_stream_demuxer");
   GrpcStreamDemuxerPtr demuxer = factory.createGrpcStreamDemuxer(demuxer_config);
   EXPECT_THAT(demuxer, testing::NotNull());
 }
