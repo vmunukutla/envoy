@@ -2,17 +2,17 @@ load(
     "//bazel:envoy_build_system.bzl",
     "envoy_cc_extension",
     "envoy_cc_library",
-    "envoy_package",
+    "envoy_extension_package",
 )
 
 licenses(["notice"])  # Apache 2
 
-envoy_package()
+envoy_extension_package()
 
 envoy_cc_library(
     name = "gcp_events_convert_filter_lib",
-    srcs = ["gcp_events_convert_filter.cc",],
-    hdrs = ["gcp_events_convert_filter.h",],
+    srcs = ["gcp_events_convert_filter.cc"],
+    hdrs = ["gcp_events_convert_filter.h"],
     deps = [
         "//include/envoy/http:filter_interface",
         "//include/envoy/runtime:runtime_interface",
@@ -26,8 +26,8 @@ envoy_cc_library(
         "//source/common/stats:symbol_table_lib",
         "//source/extensions/filters/http:well_known_names",
         "//source/extensions/filters/http/common:pass_through_filter_lib",
+        "@com_google_googleapis//google/pubsub/v1:pubsub_cc_proto",
         "@envoy_api//envoy/extensions/filters/http/gcp_events_convert/v3:pkg_cc_proto",
-        "@com_google_googleapis//google/pubsub/v1:pubsub_cc_proto"
     ],
 )
 
@@ -38,11 +38,11 @@ envoy_cc_extension(
     security_posture = "robust_to_untrusted_downstream",
     deps = [
         "//include/envoy/registry",
-        "//source/common/protobuf:utility_lib",
         "//source/common/common:enum_to_int",
+        "//source/common/protobuf:utility_lib",
         "//source/extensions/filters/http:well_known_names",
-        "//source/extensions/filters/http/gcp_events_convert:gcp_events_convert_filter_lib",
         "//source/extensions/filters/http/common:factory_base_lib",
+        "//source/extensions/filters/http/gcp_events_convert:gcp_events_convert_filter_lib",
         "@envoy_api//envoy/extensions/filters/http/gcp_events_convert/v3:pkg_cc_proto",
     ],
 )

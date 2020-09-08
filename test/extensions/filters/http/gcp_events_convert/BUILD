@@ -28,6 +28,24 @@ envoy_extension_cc_test(
         "//test/mocks/thread_local:thread_local_mocks",
         "//test/mocks/upstream:upstream_mocks",
         "//test/test_common:test_runtime_lib",
+        "@com_google_googleapis//google/pubsub/v1:pubsub_cc_proto",
         "@envoy_api//envoy/extensions/filters/http/gcp_events_convert/v3:pkg_cc_proto",
+    ],
+)
+
+envoy_extension_cc_test(
+    name = "gcp_events_convert_filter_integration_test",
+    srcs = ["gcp_events_convert_filter_integration_test.cc"],
+    extension_name = "envoy.filters.http.gcp_events_convert",
+    tags = ["fails_on_windows"],
+    deps = [
+        "//source/extensions/filters/http/buffer:config",
+        "//source/extensions/filters/http/gcp_events_convert:config",
+        "//test/integration:http_integration_lib",
+        "//test/integration:http_protocol_integration_lib",
+        "//test/test_common:utility_lib",
+        "@com_google_googleapis//google/pubsub/v1:pubsub_cc_proto",
+        "@envoy_api//envoy/extensions/filters/http/gcp_events_convert/v3:pkg_cc_proto",
+        "@envoy_api//envoy/extensions/filters/network/http_connection_manager/v3:pkg_cc_proto",
     ],
 )

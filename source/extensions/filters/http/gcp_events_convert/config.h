@@ -1,5 +1,7 @@
 #pragma once
 
+#include <string>
+
 #include "envoy/extensions/filters/http/gcp_events_convert/v3/gcp_events_convert.pb.h"
 #include "envoy/extensions/filters/http/gcp_events_convert/v3/gcp_events_convert.pb.validate.h"
 
@@ -15,13 +17,15 @@ namespace GcpEventsConvert {
  * Config registration for the Gcp Events Convert filter. @see NamedHttpFilterConfigFactory.
  */
 class GcpEventsConvertFilterFactory
-    : public Common::FactoryBase<envoy::extensions::filters::http::gcp_events_convert::v3::GcpEventsConvert> {
+    : public Common::FactoryBase<
+          envoy::extensions::filters::http::gcp_events_convert::v3::GcpEventsConvert> {
 public:
   GcpEventsConvertFilterFactory() : FactoryBase(HttpFilterNames::get().GcpEventsConvert) {}
 
 private:
   Http::FilterFactoryCb createFilterFactoryFromProtoTyped(
-      const envoy::extensions::filters::http::gcp_events_convert::v3::GcpEventsConvert& proto_config,
+      const envoy::extensions::filters::http::gcp_events_convert::v3::GcpEventsConvert&
+          proto_config,
       const std::string& stats_prefix, Server::Configuration::FactoryContext& context) override;
 };
 
