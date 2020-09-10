@@ -33,9 +33,11 @@ GcpEventsConvertFilterConfig::GcpEventsConvertFilterConfig(
 GcpEventsConvertFilter::GcpEventsConvertFilter(GcpEventsConvertFilterConfigSharedPtr config)
     : config_(config) {}
 
+// special constructor for Unit Test ONLY
 GcpEventsConvertFilter::GcpEventsConvertFilter(GcpEventsConvertFilterConfigSharedPtr config,
-                                               bool has_cloud_event)
-    : has_cloud_event_(has_cloud_event), config_(config) {}
+                                               bool has_cloud_event,
+                                               Http::RequestHeaderMap* headers)
+    : request_headers_(headers), has_cloud_event_(has_cloud_event), config_(config) {}
 
 void GcpEventsConvertFilter::onDestroy() {}
 
