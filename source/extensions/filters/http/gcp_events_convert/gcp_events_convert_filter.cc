@@ -99,8 +99,6 @@ Http::FilterDataStatus GcpEventsConvertFilter::decodeData(Buffer::Instance&, boo
     return Http::FilterDataStatus::Continue;
   }
 
-Http::FilterDataStatus GcpEventsConvertFilter::decodeData(Buffer::Instance&, bool) {
-  // TODO(#2): Implement the logic of decodeData
   return Http::FilterDataStatus::Continue;
 }
 
