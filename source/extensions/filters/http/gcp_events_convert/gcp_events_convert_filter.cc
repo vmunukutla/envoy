@@ -130,9 +130,9 @@ absl::Status GcpEventsConvertFilter::updateHeader(const HttpRequest& http_req) {
     // only copy the @pointer data() , @length size()
     absl::string_view header_val(header.value().data(), header.value().size());
     if (header_key == Http::LowerCaseString("content-type")) {
-      request_headers_->setContentType(header.value().to_string());
+      request_headers_->setContentType(header_val);
     } else {
-      request_headers_->addCopy(header_key, header.value().to_string());
+      request_headers_->addCopy(header_key, header_val);
     }
   }
   return absl::OkStatus();
