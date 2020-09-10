@@ -31,6 +31,12 @@ EXTENSIONS = {
     "envoy.grpc_credentials.aws_iam":                   "//source/extensions/grpc_credentials/aws_iam:config",
 
     #
+    # gRPC stream demuxer
+    #
+
+    "envoy.grpc_stream_demuxer":                        "//source/extensions/grpc_stream_demuxer:config",
+
+    #
     # Health checkers
     #
 
