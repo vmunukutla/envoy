@@ -76,7 +76,6 @@ TEST(GcpEventsConvertFilterUnitTest, DecodeDataWithCloudEvent) {
   EXPECT_EQ(Http::FilterDataStatus::StopIterationAndBuffer, filter.decodeData(data, false));
 }
 
-
 TEST(GcpEventsConvertFilterUnitTest, DecodeDataWithCloudEventEndOfStream) {
   envoy::extensions::filters::http::gcp_events_convert::v3::GcpEventsConvert proto_config;
   proto_config.set_content_type("application/grpc+cloudevent+json");
@@ -122,7 +121,7 @@ TEST(GcpEventsConvertFilterUnitTest, DecodeDataWithCloudEventEndOfStream) {
   Buffer::OwnedImpl data;
   EXPECT_EQ(Http::FilterDataStatus::Continue, filter.decodeData(data, true));
 
-  EXPECT_EQ(buffer.toString(), "This is a example body");
+  EXPECT_EQ(buffer.toString(), "certain body string text");
 }
 
 TEST(GcpEventsConvertFilterUnitTest, DecodeDataWithRandomBody) {
