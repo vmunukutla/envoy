@@ -32,8 +32,10 @@ class GcpEventsConvertFilter : public Http::StreamDecoderFilter,
 public:
   // normal constructor
   GcpEventsConvertFilter(GcpEventsConvertFilterConfigSharedPtr config);
-  // special constructor only used for TEST purpose
-  GcpEventsConvertFilter(GcpEventsConvertFilterConfigSharedPtr config, bool has_cloud_event);
+  // special constructor for Unit Test ONLY
+  GcpEventsConvertFilter(GcpEventsConvertFilterConfigSharedPtr config, 
+                         bool has_cloud_event,
+                         Http::RequestHeaderMap* headers);
   // Http::StreamFilterBase
   void onDestroy() override;
 
@@ -46,6 +48,7 @@ public:
 
 private:
   using HttpRequest = boost::beast::http::request<boost::beast::http::string_body>;
+
   bool isCloudEvent(const Http::RequestHeaderMap& headers) const;
 
   // modify the data of HTTP request
