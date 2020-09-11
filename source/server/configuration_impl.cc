@@ -159,9 +159,9 @@ void MainImpl::initializeGrpcStreamDemuxers(const envoy::config::bootstrap::v3::
 				   Instance& server) {
   ENVOY_LOG(info, "loading gRPC stream demuxer configurations");
 
-  for (const envoy::extensions::grpc_stream_demuxer::v3alpha::GrpcStreamDemuxer& demuxer_object : bootstrap.grpc_stream_demuxers()) {
+  for (const envoy::extensions::grpc_stream_demuxer::v3alpha::GrpcStreamDemuxer& demuxer_config : bootstrap.grpc_stream_demuxers()) {
     auto& factory = Config::Utility::getAndCheckFactoryByName<Extensions::GrpcStreamDemuxer::GrpcStreamDemuxerFactory>("grpc_stream_demuxer");
-    grpc_stream_demuxers_.emplace_back(factory.createGrpcStreamDemuxer(demuxer_object, server.dispatcher()));
+    grpc_stream_demuxers_.emplace_back(factory.createGrpcStreamDemuxer(demuxer_config, server.dispatcher()));
   }
 }
 
