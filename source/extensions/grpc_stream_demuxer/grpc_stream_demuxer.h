@@ -8,6 +8,7 @@
 #include "google/pubsub/v1/pubsub.grpc.pb.h"
 #include "grpc++/grpc++.h"
 
+using grpc::Channel;
 using grpc::ClientContext;
 using grpc::ClientReaderWriter;
 using grpc::Status;
