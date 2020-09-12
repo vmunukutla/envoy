@@ -56,10 +56,7 @@ void GrpcStreamDemuxer::start() {
   stream->Write(request);
   // Receive messages.
   StreamingPullResponse response;
-  ENVOY_LOG(debug, "one");
-  // stream_->Read(&response);
-  ENVOY_LOG(debug, "two");
-  while (stream_->Read(&response)) {
+  while (stream->Read(&response)) {
     // Ack messages.
     StreamingPullRequest ack_request;
     for (const auto &message : response.received_messages()) {
